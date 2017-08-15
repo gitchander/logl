@@ -1,14 +1,33 @@
 package logl
 
+import (
+	"strconv"
+)
+
 type Level int
 
 const (
-	LEVEL_OFF Level = iota
+	LevelOff Level = iota
 
-	LEVEL_PANIC   // log: [ Panic ]                  - before write, flush and after call panic(message)
-	LEVEL_FATAL   // log: [ Panic, Fatal ]           - before write, flush and after call os.Exit(1)
-	LEVEL_ERROR   // log: [ Panic, Fatal, Error ]
-	LEVEL_WARNING // log: [ Panic, Fatal, Error, Warning ]
-	LEVEL_INFO    // log: [ Panic, Fatal, Error, Warning, Info ]
-	LEVEL_DEBUG   // log: [ Panic, Fatal, Error, Warning, Info, Debug ]
+	LevelCritical // log: [ Critical ]
+	LevelError    // log: [ Critical, Error ]
+	LevelWarning  // log: [ Critical, Error, Warning ]
+	LevelInfo     // log: [ Critical, Error, Warning, Info ]
+	LevelDebug    // log: [ Critical, Error, Warning, Info, Debug ]
 )
+
+var name_Level = map[Level]string{
+	LevelOff:      "off",
+	LevelCritical: "critical",
+	LevelError:    "error",
+	LevelWarning:  "warning",
+	LevelInfo:     "info",
+	LevelDebug:    "debug",
+}
+
+func (l Level) String() string {
+	if name, ok := name_Level[l]; ok {
+		return name
+	}
+	return strconv.Itoa(int(l))
+}

@@ -22,7 +22,7 @@ func use(l *logl.Logger) {
 			n_word = randIntRange(r, 3, 10)
 			line   = randLine(r, n_word)
 		)
-		switch c := r.Intn(4); c {
+		switch c := r.Intn(5); c {
 		case 0:
 			l.Debug(line)
 		case 1:
@@ -31,29 +31,26 @@ func use(l *logl.Logger) {
 			l.Warning(line)
 		case 3:
 			l.Error(line)
+		case 4:
+			l.Critical(line)
 		}
 	}
 }
 
 func exampleLogStdout() {
 	c := logl.Config{
-		Output:  logl.OnlyWriter(os.Stdout),
-		Prefix:  "",
-		Level:   logl.LEVEL_DEBUG,
-		Flag:    logl.Ltime,
-		NotSafe: false,
+		Handler: logl.StreamHandler(os.Stdout, "", logl.Ltime),
+		Level:   logl.LevelDebug,
 	}
 	l := logl.New(c)
 	use(l)
+	l.Errorf("my error no %d", 78)
 }
 
 func exampleLogOff() {
 	c := logl.Config{
-		Output:  logl.OnlyWriter(os.Stdout),
-		Prefix:  "",
-		Level:   logl.LEVEL_OFF,
-		Flag:    logl.Ltime,
-		NotSafe: false,
+		Handler: logl.StreamHandler(os.Stdout, "", logl.Ltime),
+		Level:   logl.LevelOff,
 	}
 	l := logl.New(c)
 	use(l)
@@ -71,10 +68,8 @@ func exampleLogFile() {
 	defer bw.Flush()
 
 	c := logl.Config{
-		Output:  bw,
-		Prefix:  "test ",
-		Level:   logl.LEVEL_INFO,
-		Flag:    logl.Ldate | logl.Lmicroseconds,
+		Handler: logl.StreamHandler(bw, "test ", logl.Ldate|logl.Lmicroseconds),
+		Level:   logl.LevelInfo,
 		NotSafe: true,
 	}
 	logger := logl.New(c)
@@ -82,19 +77,26 @@ func exampleLogFile() {
 }
 
 func examplePanicRecover() {
+
 	defer func() {
 		message := recover()
 		if message != nil {
 			fmt.Println("defer panic:", message)
 		}
 	}()
+
+	sh := logl.StreamHandler(os.Stdout, "", logl.Ltime)
+	fh := func(r *logl.Record) {
+		sh.Handle(r)
+		if r.Level == logl.LevelCritical {
+			panic(r.Message)
+		}
+	}
+
 	c := logl.Config{
-		Output:  logl.OnlyWriter(os.Stdout),
-		Prefix:  "",
-		Level:   logl.LEVEL_ERROR,
-		Flag:    logl.Ltime,
-		NotSafe: false,
+		Handler: logl.FuncHandler(fh),
+		Level:   logl.LevelError,
 	}
 	l := logl.New(c)
-	l.Panic("my panic message")
+	l.Critical("my panic message")
 }

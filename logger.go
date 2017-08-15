@@ -2,46 +2,27 @@ package logl
 
 import (
 	"fmt"
-	"os"
 	"sync"
+	"time"
 )
 
 type Logger struct {
-	locker sync.Locker
-	out    WriteFlusher
-	prefix string
-	level  Level
-	flag   int
-	buf    []byte
+	locker  sync.Locker
+	handler Handler
+	level   Level
 }
 
 func New(c Config) *Logger {
 	return &Logger{
-		locker: getLocker(c.NotSafe),
-		out:    c.Output,
-		prefix: c.Prefix,
-		level:  c.Level,
-		flag:   c.Flag,
+		locker:  getLocker(c.NotSafe),
+		handler: getHandler(c.Handler),
+		level:   c.Level,
 	}
 }
 
-func (l *Logger) SetOutput(out WriteFlusher) {
+func (l *Logger) SetHandler(handler Handler) {
 	l.locker.Lock()
-	l.out.Flush()
-	l.out = out
-	l.locker.Unlock()
-}
-
-func (l *Logger) Prefix() (prefix string) {
-	l.locker.Lock()
-	prefix = l.prefix
-	l.locker.Unlock()
-	return
-}
-
-func (l *Logger) SetPrefix(prefix string) {
-	l.locker.Lock()
-	l.prefix = prefix
+	l.handler = getHandler(handler)
 	l.locker.Unlock()
 }
 
@@ -58,153 +39,68 @@ func (l *Logger) SetLevel(level Level) {
 	l.locker.Unlock()
 }
 
-func (l *Logger) Flag() (flag int) {
-	l.locker.Lock()
-	flag = l.flag
-	l.locker.Unlock()
-	return
+func (l *Logger) Critical(v ...interface{}) {
+	l.writeMessage(LevelCritical, v...)
 }
 
-func (l *Logger) SetFlag(flag int) {
-	l.locker.Lock()
-	l.flag = flag
-	l.locker.Unlock()
-}
-
-func (l *Logger) Panic(v ...interface{}) {
-	const level = LEVEL_PANIC
-	var message string
-	l.locker.Lock()
-	if level <= l.level {
-		message = fmt.Sprint(v...)
-		l.writeMessage(level, message)
-		l.out.Flush()
-	}
-	l.locker.Unlock()
-	panic(message)
-}
-
-func (l *Logger) Panicf(format string, v ...interface{}) {
-	const level = LEVEL_PANIC
-	var message string
-	l.locker.Lock()
-	if level <= l.level {
-		message = fmt.Sprintf(format, v...)
-		l.writeMessage(level, message)
-		l.out.Flush()
-	}
-	l.locker.Unlock()
-	panic(message)
-}
-
-func (l *Logger) Fatal(v ...interface{}) {
-	const level = LEVEL_FATAL
-	l.locker.Lock()
-	if level <= l.level {
-		l.writeMessage(level, fmt.Sprint(v...))
-		l.out.Flush()
-	}
-	l.locker.Unlock()
-	os.Exit(1)
-}
-
-func (l *Logger) Fatalf(format string, v ...interface{}) {
-	const level = LEVEL_FATAL
-	l.locker.Lock()
-	if level <= l.level {
-		l.writeMessage(level, fmt.Sprintf(format, v...))
-		l.out.Flush()
-	}
-	l.locker.Unlock()
-	os.Exit(1)
+func (l *Logger) Criticalf(format string, v ...interface{}) {
+	l.writeMessagef(LevelCritical, format, v...)
 }
 
 func (l *Logger) Error(v ...interface{}) {
-	const level = LEVEL_ERROR
-	l.locker.Lock()
-	if level <= l.level {
-		l.writeMessage(level, fmt.Sprint(v...))
-	}
-	l.locker.Unlock()
+	l.writeMessage(LevelError, v...)
 }
 
 func (l *Logger) Errorf(format string, v ...interface{}) {
-	const level = LEVEL_ERROR
-	l.locker.Lock()
-	if level <= l.level {
-		l.writeMessage(level, fmt.Sprintf(format, v...))
-	}
-	l.locker.Unlock()
+	l.writeMessagef(LevelError, format, v...)
 }
 
 func (l *Logger) Warning(v ...interface{}) {
-	const level = LEVEL_WARNING
-	l.locker.Lock()
-	if level <= l.level {
-		l.writeMessage(level, fmt.Sprint(v...))
-	}
-	l.locker.Unlock()
+	l.writeMessage(LevelWarning, v...)
 }
 
 func (l *Logger) Warningf(format string, v ...interface{}) {
-	const level = LEVEL_WARNING
-	l.locker.Lock()
-	if level <= l.level {
-		l.writeMessage(level, fmt.Sprintf(format, v...))
-	}
-	l.locker.Unlock()
+	l.writeMessagef(LevelWarning, format, v...)
 }
 
 func (l *Logger) Info(v ...interface{}) {
-	const level = LEVEL_INFO
-	l.locker.Lock()
-	if level <= l.level {
-		l.writeMessage(level, fmt.Sprint(v...))
-	}
-	l.locker.Unlock()
+	l.writeMessage(LevelInfo, v...)
 }
 
 func (l *Logger) Infof(format string, v ...interface{}) {
-	const level = LEVEL_INFO
-	l.locker.Lock()
-	if level <= l.level {
-		l.writeMessage(level, fmt.Sprintf(format, v...))
-	}
-	l.locker.Unlock()
+	l.writeMessagef(LevelInfo, format, v...)
 }
 
 func (l *Logger) Debug(v ...interface{}) {
-	const level = LEVEL_DEBUG
-	l.locker.Lock()
-	if level <= l.level {
-		l.writeMessage(level, fmt.Sprint(v...))
-	}
-	l.locker.Unlock()
+	l.writeMessage(LevelDebug, v...)
 }
 
 func (l *Logger) Debugf(format string, v ...interface{}) {
-	const level = LEVEL_DEBUG
+	l.writeMessagef(LevelDebug, format, v...)
+}
+
+func (l *Logger) writeMessage(level Level, v ...interface{}) {
 	l.locker.Lock()
 	if level <= l.level {
-		l.writeMessage(level, fmt.Sprintf(format, v...))
+		r := &Record{
+			Time:    time.Now(),
+			Level:   level,
+			Message: fmt.Sprint(v...),
+		}
+		l.handler.Handle(r)
 	}
 	l.locker.Unlock()
 }
 
-func (l *Logger) writeMessage(level Level, message string) {
-
-	if len(message) == 0 {
-		return
+func (l *Logger) writeMessagef(level Level, format string, v ...interface{}) {
+	l.locker.Lock()
+	if level <= l.level {
+		r := &Record{
+			Time:    time.Now(),
+			Level:   level,
+			Message: fmt.Sprintf(format, v...),
+		}
+		l.handler.Handle(r)
 	}
-
-	data := l.buf[:0]
-
-	data = append(data, l.prefix...)
-	data = append_level(data, level)
-	data = append_time(data, l.flag)
-	data = append_message(data, message)
-
-	l.buf = data
-
-	l.out.Write(l.buf)
+	l.locker.Unlock()
 }

@@ -2,29 +2,33 @@ package logl
 
 import "time"
 
+// Flags
+const (
+	Ldate         = 1 << iota // the date in the local time zone: 2009/01/23
+	Ltime                     // the time in the local time zone: 01:23:23
+	Lmicroseconds             // microsecond resolution: 01:23:23.123123.  assumes Ltime.
+)
+
 var (
-	tag_Panic   = []byte("PAN")
-	tag_Fatal   = []byte("FAT")
-	tag_Error   = []byte("ERR")
-	tag_Warning = []byte("WAR")
-	tag_Info    = []byte("INF")
-	tag_Debug   = []byte("DEB")
+	tag_Critical = []byte("CRI")
+	tag_Error    = []byte("ERR")
+	tag_Warning  = []byte("WAR")
+	tag_Info     = []byte("INF")
+	tag_Debug    = []byte("DEB")
 )
 
 func append_level(data []byte, level Level) []byte {
 
 	switch level {
-	case LEVEL_PANIC:
-		data = append(data, tag_Panic...)
-	case LEVEL_FATAL:
-		data = append(data, tag_Fatal...)
-	case LEVEL_ERROR:
+	case LevelCritical:
+		data = append(data, tag_Critical...)
+	case LevelError:
 		data = append(data, tag_Error...)
-	case LEVEL_WARNING:
+	case LevelWarning:
 		data = append(data, tag_Warning...)
-	case LEVEL_INFO:
+	case LevelInfo:
 		data = append(data, tag_Info...)
-	case LEVEL_DEBUG:
+	case LevelDebug:
 		data = append(data, tag_Debug...)
 	}
 
@@ -33,16 +37,14 @@ func append_level(data []byte, level Level) []byte {
 	return data
 }
 
-func append_time(data []byte, flag int) []byte {
+func append_time(data []byte, flag int, t time.Time) []byte {
 
 	if flag&(Ldate|Ltime|Lmicroseconds) == 0 {
 		return data
 	}
 
-	now := time.Now()
-
 	if flag&Ldate != 0 {
-		year, month, day := now.Date()
+		year, month, day := t.Date()
 		data = append_intc(data, year, 4)
 		data = append(data, '/')
 		data = append_intc(data, int(month), 2)
@@ -52,7 +54,7 @@ func append_time(data []byte, flag int) []byte {
 	}
 
 	if flag&(Ltime|Lmicroseconds) != 0 {
-		hour, min, sec := now.Clock()
+		hour, min, sec := t.Clock()
 		data = append_intc(data, hour, 2)
 		data = append(data, ':')
 		data = append_intc(data, min, 2)
@@ -60,7 +62,7 @@ func append_time(data []byte, flag int) []byte {
 		data = append_intc(data, sec, 2)
 		if flag&Lmicroseconds != 0 {
 			data = append(data, '.')
-			data = append_intc(data, now.Nanosecond()/1e3, 6)
+			data = append_intc(data, t.Nanosecond()/1e3, 6)
 		}
 		data = append(data, ' ')
 	}
