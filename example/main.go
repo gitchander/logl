@@ -39,8 +39,12 @@ func use(l *logl.Logger) {
 
 func exampleLogStdout() {
 	c := logl.Config{
-		Handler: logl.StreamHandler(os.Stdout, "", logl.Ltime),
-		Level:   logl.LevelDebug,
+		Handler: &logl.StreamHandler{
+			Output:   os.Stdout,
+			Prefix:   "",
+			TimeFlag: logl.TF_TIME,
+		},
+		Level: logl.LevelDebug,
 	}
 	l := logl.New(c)
 	use(l)
@@ -49,8 +53,12 @@ func exampleLogStdout() {
 
 func exampleLogOff() {
 	c := logl.Config{
-		Handler: logl.StreamHandler(os.Stdout, "", logl.Ltime),
-		Level:   logl.LevelOff,
+		Handler: &logl.StreamHandler{
+			Output:   os.Stdout,
+			Prefix:   "",
+			TimeFlag: logl.TF_TIME,
+		},
+		Level: logl.LevelOff,
 	}
 	l := logl.New(c)
 	use(l)
@@ -68,11 +76,15 @@ func exampleLogFile() {
 	defer bw.Flush()
 
 	c := logl.Config{
-		Handler: logl.StreamHandler(bw, "test ", logl.Ldate|logl.Lmicroseconds),
-		Level:   logl.LevelInfo,
+		Handler: &logl.StreamHandler{
+			Output:   bw,
+			Prefix:   "test ",
+			TimeFlag: logl.TF_DATE | logl.TF_MICROSECONDS,
+		},
+		Level: logl.LevelInfo,
 	}
-	logger := logl.New(c)
-	use(logger)
+	l := logl.New(c)
+	use(l)
 }
 
 func examplePanicRecover() {
@@ -84,7 +96,11 @@ func examplePanicRecover() {
 		}
 	}()
 
-	sh := logl.StreamHandler(os.Stdout, "", logl.Ltime)
+	sh := &logl.StreamHandler{
+		Output:   os.Stdout,
+		Prefix:   "",
+		TimeFlag: logl.TF_TIME,
+	}
 	fh := func(r *logl.Record) {
 		sh.Handle(r)
 		if r.Level == logl.LevelCritical {

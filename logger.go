@@ -44,6 +44,19 @@ func (l *Logger) SetLevel(level Level) {
 	l.locker.Unlock()
 }
 
+func (l *Logger) handleMessage(level Level, message string) {
+	l.locker.Lock()
+	if level <= l.level {
+		r := &Record{
+			Time:    time.Now(),
+			Level:   level,
+			Message: message,
+		}
+		l.handler.Handle(r)
+	}
+	l.locker.Unlock()
+}
+
 func (l *Logger) Critical(v ...interface{}) {
 	l.handleMessage(LevelCritical, fmt.Sprint(v...))
 }
@@ -82,17 +95,4 @@ func (l *Logger) Debug(v ...interface{}) {
 
 func (l *Logger) Debugf(format string, v ...interface{}) {
 	l.handleMessage(LevelDebug, fmt.Sprintf(format, v...))
-}
-
-func (l *Logger) handleMessage(level Level, message string) {
-	l.locker.Lock()
-	if level <= l.level {
-		r := &Record{
-			Time:    time.Now(),
-			Level:   level,
-			Message: message,
-		}
-		l.handler.Handle(r)
-	}
-	l.locker.Unlock()
 }

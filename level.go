@@ -1,8 +1,6 @@
 package logl
 
-import (
-	"strconv"
-)
+import "strconv"
 
 type Level int
 
