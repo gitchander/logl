@@ -6,6 +6,11 @@ import (
 	"time"
 )
 
+type Config struct {
+	Handler Handler
+	Level   Level
+}
+
 type Logger struct {
 	locker  sync.Locker
 	handler Handler
@@ -14,7 +19,7 @@ type Logger struct {
 
 func New(c Config) *Logger {
 	return &Logger{
-		locker:  getLocker(c.NotSafe),
+		locker:  getLocker(false),
 		handler: getHandler(c.Handler),
 		level:   c.Level,
 	}
@@ -40,65 +45,52 @@ func (l *Logger) SetLevel(level Level) {
 }
 
 func (l *Logger) Critical(v ...interface{}) {
-	l.writeMessage(LevelCritical, v...)
+	l.handleMessage(LevelCritical, fmt.Sprint(v...))
 }
 
 func (l *Logger) Criticalf(format string, v ...interface{}) {
-	l.writeMessagef(LevelCritical, format, v...)
+	l.handleMessage(LevelCritical, fmt.Sprintf(format, v...))
 }
 
 func (l *Logger) Error(v ...interface{}) {
-	l.writeMessage(LevelError, v...)
+	l.handleMessage(LevelError, fmt.Sprint(v...))
 }
 
 func (l *Logger) Errorf(format string, v ...interface{}) {
-	l.writeMessagef(LevelError, format, v...)
+	l.handleMessage(LevelError, fmt.Sprintf(format, v...))
 }
 
 func (l *Logger) Warning(v ...interface{}) {
-	l.writeMessage(LevelWarning, v...)
+	l.handleMessage(LevelWarning, fmt.Sprint(v...))
 }
 
 func (l *Logger) Warningf(format string, v ...interface{}) {
-	l.writeMessagef(LevelWarning, format, v...)
+	l.handleMessage(LevelWarning, fmt.Sprintf(format, v...))
 }
 
 func (l *Logger) Info(v ...interface{}) {
-	l.writeMessage(LevelInfo, v...)
+	l.handleMessage(LevelInfo, fmt.Sprint(v...))
 }
 
 func (l *Logger) Infof(format string, v ...interface{}) {
-	l.writeMessagef(LevelInfo, format, v...)
+	l.handleMessage(LevelInfo, fmt.Sprintf(format, v...))
 }
 
 func (l *Logger) Debug(v ...interface{}) {
-	l.writeMessage(LevelDebug, v...)
+	l.handleMessage(LevelDebug, fmt.Sprint(v...))
 }
 
 func (l *Logger) Debugf(format string, v ...interface{}) {
-	l.writeMessagef(LevelDebug, format, v...)
+	l.handleMessage(LevelDebug, fmt.Sprintf(format, v...))
 }
 
-func (l *Logger) writeMessage(level Level, v ...interface{}) {
+func (l *Logger) handleMessage(level Level, message string) {
 	l.locker.Lock()
 	if level <= l.level {
 		r := &Record{
 			Time:    time.Now(),
 			Level:   level,
-			Message: fmt.Sprint(v...),
-		}
-		l.handler.Handle(r)
-	}
-	l.locker.Unlock()
-}
-
-func (l *Logger) writeMessagef(level Level, format string, v ...interface{}) {
-	l.locker.Lock()
-	if level <= l.level {
-		r := &Record{
-			Time:    time.Now(),
-			Level:   level,
-			Message: fmt.Sprintf(format, v...),
+			Message: message,
 		}
 		l.handler.Handle(r)
 	}

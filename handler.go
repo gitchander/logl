@@ -2,10 +2,17 @@ package logl
 
 import (
 	"io"
+	"time"
 )
 
 type Handler interface {
 	Handle(*Record)
+}
+
+type Record struct {
+	Time    time.Time
+	Level   Level
+	Message string
 }
 
 func FuncHandler(fn func(*Record)) Handler {

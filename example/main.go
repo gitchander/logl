@@ -70,7 +70,6 @@ func exampleLogFile() {
 	c := logl.Config{
 		Handler: logl.StreamHandler(bw, "test ", logl.Ldate|logl.Lmicroseconds),
 		Level:   logl.LevelInfo,
-		NotSafe: true,
 	}
 	logger := logl.New(c)
 	use(logger)
