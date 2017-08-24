@@ -5,17 +5,14 @@ import "strconv"
 type Level int
 
 const (
-	LevelOff Level = iota
-
-	LevelCritical // log: [ Critical ]
-	LevelError    // log: [ Critical, Error ]
-	LevelWarning  // log: [ Critical, Error, Warning ]
-	LevelInfo     // log: [ Critical, Error, Warning, Info ]
-	LevelDebug    // log: [ Critical, Error, Warning, Info, Debug ]
+	LevelCritical Level = iota // log: [ Critical ]
+	LevelError                 // log: [ Critical, Error ]
+	LevelWarning               // log: [ Critical, Error, Warning ]
+	LevelInfo                  // log: [ Critical, Error, Warning, Info ]
+	LevelDebug                 // log: [ Critical, Error, Warning, Info, Debug ]
 )
 
 var name_Level = map[Level]string{
-	LevelOff:      "off",
 	LevelCritical: "critical",
 	LevelError:    "error",
 	LevelWarning:  "warning",

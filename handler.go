@@ -1,6 +1,7 @@
 package logl
 
 import (
+	"io"
 	"time"
 )
 
@@ -28,10 +29,49 @@ type fakeHandler struct{}
 
 func (fakeHandler) Handle(*Record) {}
 
-func getHandler(handler Handler) Handler {
-	if handler != nil {
-		return handler
-	} else {
-		return fakeHandler{}
+var FakeHandler Handler = fakeHandler{}
+
+func MultiHandler(hs ...Handler) Handler {
+	return FuncHandler(
+		func(r *Record) {
+			for _, h := range hs {
+				h.Handle(r)
+			}
+		},
+	)
+}
+
+func FilterHandler(filter func(*Record) bool, handler Handler) Handler {
+	return FuncHandler(
+		func(r *Record) {
+			if filter(r) {
+				handler.Handle(r)
+			}
+		},
+	)
+}
+
+type StreamHandler struct {
+	Output io.Writer
+	Format Format
+}
+
+func (p *StreamHandler) Handle(r *Record) {
+	data := p.Format.Format(r)
+	if !lastByteIs(data, '\n') {
+		data = append(data, '\n')
 	}
+	p.Output.Write(data)
+}
+
+func streamHandlerVar2(out io.Writer, format Format) Handler {
+	return FuncHandler(
+		func(r *Record) {
+			data := format.Format(r)
+			if !lastByteIs(data, '\n') {
+				data = append(data, '\n')
+			}
+			out.Write(data)
+		},
+	)
 }

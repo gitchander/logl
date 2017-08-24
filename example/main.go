@@ -2,8 +2,10 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"os"
+	"sync"
 
 	"github.com/gitchander/logl"
 )
@@ -13,52 +15,36 @@ func main() {
 	exampleLogOff()
 	exampleLogFile()
 	examplePanicRecover()
+	exampleThreads()
 }
 
 func use(l *logl.Logger) {
 	r := newRand()
 	for i := 0; i < 100; i++ {
-		var (
-			n_word = randIntRange(r, 3, 10)
-			line   = randLine(r, n_word)
-		)
-		switch c := r.Intn(5); c {
-		case 0:
-			l.Debug(line)
-		case 1:
-			l.Info(line)
-		case 2:
-			l.Warning(line)
-		case 3:
-			l.Error(line)
-		case 4:
-			l.Critical(line)
-		}
+		randLogMessage(r, l)
 	}
 }
 
 func exampleLogStdout() {
 	c := logl.Config{
 		Handler: &logl.StreamHandler{
-			Output:   os.Stdout,
-			Prefix:   "",
-			TimeFlag: logl.TF_TIME,
+			Output: os.Stdout,
+			Format: logl.TextFormat(logl.TF_TIME),
 		},
 		Level: logl.LevelDebug,
 	}
 	l := logl.New(c)
 	use(l)
-	l.Errorf("my error no %d", 78)
+	l.Error(fmt.Sprintf("my error no %d", 78))
 }
 
 func exampleLogOff() {
 	c := logl.Config{
 		Handler: &logl.StreamHandler{
-			Output:   os.Stdout,
-			Prefix:   "",
-			TimeFlag: logl.TF_TIME,
+			Output: os.Stdout,
+			Format: logl.TextFormat(logl.TF_TIME),
 		},
-		Level: logl.LevelOff,
+		Level: -1,
 	}
 	l := logl.New(c)
 	use(l)
@@ -77,11 +63,10 @@ func exampleLogFile() {
 
 	c := logl.Config{
 		Handler: &logl.StreamHandler{
-			Output:   bw,
-			Prefix:   "test ",
-			TimeFlag: logl.TF_DATE | logl.TF_MICROSECONDS,
+			Output: bw,
+			Format: logl.TextFormat(logl.TF_DATE | logl.TF_MICROSECONDS),
 		},
-		Level: logl.LevelInfo,
+		Level: logl.LevelWarning,
 	}
 	l := logl.New(c)
 	use(l)
@@ -97,9 +82,8 @@ func examplePanicRecover() {
 	}()
 
 	sh := &logl.StreamHandler{
-		Output:   os.Stdout,
-		Prefix:   "",
-		TimeFlag: logl.TF_TIME,
+		Output: os.Stdout,
+		Format: logl.TextFormat(logl.TF_TIME),
 	}
 	fh := func(r *logl.Record) {
 		sh.Handle(r)
@@ -114,4 +98,61 @@ func examplePanicRecover() {
 	}
 	l := logl.New(c)
 	l.Critical("my panic message")
+}
+
+func exampleThreads() {
+	file, err := os.OpenFile("test1.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		return
+	}
+	defer file.Close()
+
+	bw := bufio.NewWriter(file)
+	defer bw.Flush()
+
+	logger := logl.New(
+		logl.Config{
+			Handler: logl.MultiHandler(
+				logl.FakeHandler,
+				&logl.StreamHandler{
+					Output: bw,
+					Format: logl.JsonFormat(),
+				},
+				&logl.StreamHandler{
+					Output: os.Stdout,
+					//Format: logl.JsonFormat(),
+					//Format: new(customTextFormat),
+					Format: logl.TextFormat(logl.TF_DATE | logl.TF_MICROSECONDS),
+				},
+			),
+			Level: logl.LevelWarning,
+		},
+	)
+	var wg sync.WaitGroup
+	const n = 100
+	wg.Add(n)
+	for i := 0; i < n; i++ {
+		go func(id int) {
+			r := newRandSeed(int64(id))
+			for j := 0; j < 100; j++ {
+				var (
+					level   = randLevel(r)
+					message = fmt.Sprintf("id(%d): %s", id, randLine(r, randIntRange(r, 3, 8)))
+				)
+				logger.Message(level, message)
+			}
+			wg.Done()
+		}(i)
+	}
+	wg.Wait()
+}
+
+type customTextFormat struct {
+	buf bytes.Buffer
+}
+
+func (p *customTextFormat) Format(r *logl.Record) []byte {
+	p.buf.Reset()
+	fmt.Fprintf(&(p.buf), "%s [%-8s] %s", r.Time.Format("2006/01/02 15:04:05"), r.Level, r.Message)
+	return p.buf.Bytes()
 }

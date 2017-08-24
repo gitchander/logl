@@ -1,15 +1,8 @@
 package logl
 
 import (
-	"io"
 	"time"
-)
-
-// Time flags
-const (
-	TF_DATE         = 1 << iota // the date in the local time zone: 2009/01/23
-	TF_TIME                     // the time in the local time zone: 01:23:23
-	TF_MICROSECONDS             // microsecond resolution: 01:23:23.123123. assumes TF_TIME.
+	"unicode/utf8"
 )
 
 var (
@@ -19,28 +12,6 @@ var (
 	tag_Info     = []byte("INF")
 	tag_Debug    = []byte("DEB")
 )
-
-type StreamHandler struct {
-	Output   io.Writer
-	Prefix   string
-	TimeFlag int
-
-	buf []byte
-}
-
-func (sh *StreamHandler) Handle(r *Record) {
-
-	data := sh.buf[:0]
-
-	data = append(data, sh.Prefix...)
-	data = append_level(data, r.Level)
-	data = append_time(data, sh.TimeFlag, r.Time)
-	data = append_message(data, r.Message)
-
-	sh.buf = data
-
-	sh.Output.Write(sh.buf)
-}
 
 func append_level(data []byte, level Level) []byte {
 
@@ -96,17 +67,33 @@ func append_time(data []byte, flag int, t time.Time) []byte {
 }
 
 func append_message(data []byte, m string) []byte {
-
-	data = append(data, m...)
-
-	if !lastByteIs(m, '\n') {
-		data = append(data, '\n')
+	runeBuf := make([]byte, utf8.UTFMax)
+	for _, r := range m {
+		switch r {
+		case '\n':
+			data = append(data, '\\', 'n')
+		case '\r':
+			data = append(data, '\\', 'r')
+		case '\t':
+			data = append(data, '\\', 't')
+		case '"', '\\':
+			data = append(data, '\\', byte(r))
+		default:
+			size := utf8.EncodeRune(runeBuf, r)
+			data = append(data, runeBuf[:size]...)
+		}
 	}
-
 	return data
 }
 
-func lastByteIs(s string, b byte) bool {
+func lastByteIs(data []byte, b byte) bool {
+	if n := len(data); n > 0 {
+		return data[n-1] == b
+	}
+	return false
+}
+
+func strLastByteIs(s string, b byte) bool {
 	if n := len(s); n > 0 {
 		return s[n-1] == b
 	}
