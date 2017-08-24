@@ -21,6 +21,7 @@ func (p *textFormat) Format(r *Record) []byte {
 	data = append_level(data, r.Level)
 	data = append_time(data, p.timeFlag, r.Time)
 	data = append_message(data, r.Message)
+	data = append(data, '\n')
 
 	p.buf = data
 
@@ -58,6 +59,7 @@ func (p *jsonFormat) Format(r *Record) []byte {
 	buf.WriteByte(',')
 	jsonEncodePair(buf, "message", r.Message)
 	buf.WriteByte('}')
+	buf.WriteByte('\n')
 	return buf.Bytes()
 }
 

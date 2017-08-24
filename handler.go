@@ -58,20 +58,14 @@ type StreamHandler struct {
 
 func (p *StreamHandler) Handle(r *Record) {
 	data := p.Format.Format(r)
-	if !lastByteIs(data, '\n') {
-		data = append(data, '\n')
-	}
 	p.Output.Write(data)
 }
 
-func streamHandlerVar2(out io.Writer, format Format) Handler {
-	return FuncHandler(
-		func(r *Record) {
-			data := format.Format(r)
-			if !lastByteIs(data, '\n') {
-				data = append(data, '\n')
-			}
-			out.Write(data)
-		},
-	)
-}
+//func StreamHandler(out io.Writer, format Format) Handler {
+//	return FuncHandler(
+//		func(r *Record) {
+//			data := format.Format(r)
+//			out.Write(data)
+//		},
+//	)
+//}

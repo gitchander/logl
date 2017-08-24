@@ -153,6 +153,6 @@ type customTextFormat struct {
 
 func (p *customTextFormat) Format(r *logl.Record) []byte {
 	p.buf.Reset()
-	fmt.Fprintf(&(p.buf), "%s [%-8s] %s", r.Time.Format("2006/01/02 15:04:05"), r.Level, r.Message)
+	fmt.Fprintf(&(p.buf), "%s [%-8s] %s\n", r.Time.Format("2006/01/02 15:04:05"), r.Level, r.Message)
 	return p.buf.Bytes()
 }
