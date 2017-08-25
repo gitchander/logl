@@ -45,6 +45,7 @@ func (l *Logger) SetLevel(level Level) {
 
 func (l *Logger) handleMessage(level Level, message string) {
 	l.locker.Lock()
+	defer l.locker.Unlock()
 	if level <= l.level {
 		r := &Record{
 			Time:    time.Now(),
@@ -53,7 +54,6 @@ func (l *Logger) handleMessage(level Level, message string) {
 		}
 		l.handler.Handle(r)
 	}
-	l.locker.Unlock()
 }
 
 func (l *Logger) Message(level Level, message string) {
