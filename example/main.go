@@ -14,7 +14,7 @@ func main() {
 	exampleLogStdout()
 	exampleLogOff()
 	exampleLogFile()
-	examplePanicRecover()
+	examplePanic()
 	exampleThreads()
 }
 
@@ -29,22 +29,22 @@ func exampleLogStdout() {
 	c := logl.Config{
 		Handler: &logl.StreamHandler{
 			Output: os.Stdout,
-			Format: logl.TextFormat(logl.TF_TIME),
+			Format: &logl.TextFormat{HasLevel: true, Time: true},
 		},
 		Level: logl.LevelDebug,
 	}
 	l := logl.New(c)
 	use(l)
-	l.Error(fmt.Sprintf("my error no %d", 78))
+	l.Error("my error no %d", 78)
 }
 
 func exampleLogOff() {
 	c := logl.Config{
 		Handler: &logl.StreamHandler{
 			Output: os.Stdout,
-			Format: logl.TextFormat(logl.TF_TIME),
+			Format: &logl.TextFormat{HasLevel: true, Time: true},
 		},
-		Level: -1,
+		Level: 0,
 	}
 	l := logl.New(c)
 	use(l)
@@ -64,7 +64,10 @@ func exampleLogFile() {
 	c := logl.Config{
 		Handler: &logl.StreamHandler{
 			Output: bw,
-			Format: logl.TextFormat(logl.TF_DATE | logl.TF_MICROSECONDS),
+			Format: &logl.TextFormat{
+				Date:         true,
+				Microseconds: true,
+			},
 		},
 		Level: logl.LevelWarning,
 	}
@@ -72,18 +75,14 @@ func exampleLogFile() {
 	use(l)
 }
 
-func examplePanicRecover() {
-
-	defer func() {
-		message := recover()
-		if message != nil {
-			fmt.Println("defer panic:", message)
-		}
-	}()
+func examplePanic() {
 
 	sh := &logl.StreamHandler{
 		Output: os.Stdout,
-		Format: logl.TextFormat(logl.TF_TIME),
+		Format: &logl.TextFormat{
+			HasLevel: true,
+			Time:     true,
+		},
 	}
 	fh := func(r *logl.Record) {
 		sh.Handle(r)
@@ -94,10 +93,25 @@ func examplePanicRecover() {
 
 	c := logl.Config{
 		Handler: logl.FuncHandler(fh),
-		Level:   logl.LevelError,
+		Level:   logl.LevelInfo,
 	}
 	l := logl.New(c)
-	l.Critical("my panic message")
+
+	panicMessageRecover(l)
+
+	l.Info("Success info!")
+}
+
+func panicMessageRecover(l *logl.Logger) {
+
+	defer func() {
+		message := recover()
+		if message != nil {
+			fmt.Println("recover panic:", message)
+		}
+	}()
+
+	l.Critical("Message with panic")
 }
 
 func exampleThreads() {
@@ -122,7 +136,13 @@ func exampleThreads() {
 					Output: os.Stdout,
 					//Format: logl.JsonFormat(),
 					//Format: new(customTextFormat),
-					Format: logl.TextFormat(logl.TF_DATE | logl.TF_MICROSECONDS),
+					Format: &logl.TextFormat{
+						HasLevel:      true,
+						Date:          true,
+						Time:          true,
+						Microseconds:  true,
+						ShieldSpecial: true,
+					},
 				},
 			),
 			Level: logl.LevelWarning,
@@ -136,8 +156,9 @@ func exampleThreads() {
 			r := newRandSeed(int64(id))
 			for j := 0; j < 100; j++ {
 				var (
-					level   = randLevel(r)
-					message = fmt.Sprintf("id(%d): %s", id, randLine(r, randIntRange(r, 3, 8)))
+					level = randLevel(r)
+					// message = fmt.Sprintf("id(%d):%s", id, randLine(r, randIntRange(r, 3, 8)))
+					message = randLine(r, randIntRange(r, 3, 8))
 				)
 				logger.Message(level, message)
 			}
