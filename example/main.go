@@ -18,35 +18,40 @@ func main() {
 	exampleThreads()
 }
 
-func use(l *logl.Logger) {
-	r := newRand()
+func use(l logl.Logger) {
+	r := newRandFromTime()
 	for i := 0; i < 100; i++ {
 		randLogMessage(r, l)
 	}
 }
 
 func exampleLogStdout() {
-	c := logl.Config{
-		Handler: &logl.StreamHandler{
+	l := logl.NewHandleLogger(
+		&logl.StreamHandler{
 			Output: os.Stdout,
-			Format: &logl.TextFormat{HasLevel: true, Time: true},
+			Format: &logl.FormatText{
+				HasLevel:      true,
+				Time:          true,
+				ShieldSpecial: true,
+			},
 		},
-		Level: logl.LevelDebug,
-	}
-	l := logl.New(c)
+		logl.LevelTrace,
+	)
 	use(l)
 	l.Error("my error no %d", 78)
 }
 
 func exampleLogOff() {
-	c := logl.Config{
-		Handler: &logl.StreamHandler{
+	l := logl.NewHandleLogger(
+		&logl.StreamHandler{
 			Output: os.Stdout,
-			Format: &logl.TextFormat{HasLevel: true, Time: true},
+			Format: &logl.FormatText{
+				HasLevel: true,
+				Time:     true,
+			},
 		},
-		Level: 0,
-	}
-	l := logl.New(c)
+		logl.LevelOff,
+	)
 	use(l)
 }
 
@@ -61,17 +66,16 @@ func exampleLogFile() {
 	bw := bufio.NewWriter(file)
 	defer bw.Flush()
 
-	c := logl.Config{
-		Handler: &logl.StreamHandler{
+	l := logl.NewHandleLogger(
+		&logl.StreamHandler{
 			Output: bw,
-			Format: &logl.TextFormat{
+			Format: &logl.FormatText{
 				Date:         true,
 				Microseconds: true,
 			},
 		},
-		Level: logl.LevelWarning,
-	}
-	l := logl.New(c)
+		logl.LevelWarning,
+	)
 	use(l)
 }
 
@@ -79,30 +83,28 @@ func examplePanic() {
 
 	sh := &logl.StreamHandler{
 		Output: os.Stdout,
-		Format: &logl.TextFormat{
+		Format: &logl.FormatText{
 			HasLevel: true,
 			Time:     true,
 		},
 	}
-	fh := func(r *logl.Record) {
-		sh.Handle(r)
-		if r.Level == logl.LevelCritical {
-			panic(r.Message)
-		}
-	}
 
-	c := logl.Config{
-		Handler: logl.FuncHandler(fh),
-		Level:   logl.LevelInfo,
-	}
-	l := logl.New(c)
+	l := logl.NewHandleLogger(
+		logl.FuncHandler(func(r *logl.Record) {
+			sh.Handle(r)
+			if r.Level == logl.LevelCritical {
+				panic(r.Message)
+			}
+		}),
+		logl.LevelInfo,
+	)
 
 	panicMessageRecover(l)
 
 	l.Info("Success info!")
 }
 
-func panicMessageRecover(l *logl.Logger) {
+func panicMessageRecover(l logl.Logger) {
 
 	defer func() {
 		message := recover()
@@ -124,29 +126,27 @@ func exampleThreads() {
 	bw := bufio.NewWriter(file)
 	defer bw.Flush()
 
-	logger := logl.New(
-		logl.Config{
-			Handler: logl.MultiHandler(
-				logl.FakeHandler,
-				&logl.StreamHandler{
-					Output: bw,
-					Format: logl.JsonFormat(),
+	l := logl.NewHandleLogger(
+		logl.MultiHandler(
+			logl.FakeHandler,
+			&logl.StreamHandler{
+				Output: bw,
+				Format: logl.FormatJSON(),
+			},
+			&logl.StreamHandler{
+				Output: os.Stdout,
+				//Format: logl.FormatJSON(),
+				//Format: new(customTextFormat),
+				Format: &logl.FormatText{
+					HasLevel:      true,
+					Date:          true,
+					Time:          true,
+					Microseconds:  true,
+					ShieldSpecial: true,
 				},
-				&logl.StreamHandler{
-					Output: os.Stdout,
-					//Format: logl.JsonFormat(),
-					//Format: new(customTextFormat),
-					Format: &logl.TextFormat{
-						HasLevel:      true,
-						Date:          true,
-						Time:          true,
-						Microseconds:  true,
-						ShieldSpecial: true,
-					},
-				},
-			),
-			Level: logl.LevelWarning,
-		},
+			},
+		),
+		logl.LevelWarning,
 	)
 	var wg sync.WaitGroup
 	const n = 100
@@ -160,7 +160,7 @@ func exampleThreads() {
 					// message = fmt.Sprintf("id(%d):%s", id, randLine(r, randIntRange(r, 3, 8)))
 					message = randLine(r, randIntRange(r, 3, 8))
 				)
-				logger.Message(level, message)
+				logMessage(l, level, message)
 			}
 			wg.Done()
 		}(i)

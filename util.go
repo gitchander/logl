@@ -20,9 +20,3 @@ func flip(data []byte) {
 		i, j = i+1, j-1
 	}
 }
-
-func cloneBytes(a []byte) (b []byte) {
-	b = make([]byte, len(a))
-	copy(b, a)
-	return
-}

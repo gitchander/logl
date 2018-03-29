@@ -4,12 +4,12 @@ import (
 	"bytes"
 )
 
-type jsonFormat struct {
-	buf *bytes.Buffer
+type formatJSON struct {
+	buf bytes.Buffer
 }
 
-func (ft *jsonFormat) Format(r *Record) []byte {
-	var buf = ft.buf
+func (f *formatJSON) Format(r *Record) []byte {
+	buf := &(f.buf)
 	buf.Reset()
 	buf.WriteByte('{')
 	jsonEncodePair(buf, "time", r.Time.Format("2006-01-02 15:04:05"))
@@ -22,8 +22,8 @@ func (ft *jsonFormat) Format(r *Record) []byte {
 	return buf.Bytes()
 }
 
-func JsonFormat() Format {
-	return &jsonFormat{new(bytes.Buffer)}
+func FormatJSON() Format {
+	return new(formatJSON)
 }
 
 func jsonEncodePair(buf *bytes.Buffer, name, value string) {

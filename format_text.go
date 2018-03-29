@@ -11,9 +11,10 @@ var (
 	tag_Warning  = []byte("WAR")
 	tag_Info     = []byte("INF")
 	tag_Debug    = []byte("DEB")
+	tag_Trace    = []byte("TRA")
 )
 
-type TextFormat struct {
+type FormatText struct {
 	HasLevel      bool
 	Date          bool
 	Time          bool
@@ -21,13 +22,13 @@ type TextFormat struct {
 	ShieldSpecial bool // { '\n', '\r', '\t' }
 }
 
-func (f *TextFormat) Format(r *Record) []byte {
+func (f *FormatText) Format(r *Record) []byte {
 	var buf bytes.Buffer
 	writeTextFormat(&buf, r, f)
 	return buf.Bytes()
 }
 
-func writeTextFormat(buf *bytes.Buffer, r *Record, f *TextFormat) {
+func writeTextFormat(buf *bytes.Buffer, r *Record, f *FormatText) {
 
 	if f.HasLevel {
 		writeLevel(buf, r.Level)
@@ -60,15 +61,18 @@ func writeLevel(buf *bytes.Buffer, level Level) {
 		buf.Write(tag_Info)
 	case LevelDebug:
 		buf.Write(tag_Debug)
+	case LevelTrace:
+		buf.Write(tag_Trace)
 	}
 }
 
-func writeTime(buf *bytes.Buffer, f *TextFormat, t time.Time) {
+const (
+	dateSeparator = '/'
+	timeSeparator = ':'
+)
 
+func writeTime(buf *bytes.Buffer, f *FormatText, t time.Time) {
 	if f.Date {
-
-		const dateSeparator = '/'
-
 		year, month, day := t.Date()
 		writeIntn(buf, year, 4)
 		buf.WriteByte(dateSeparator)
@@ -77,11 +81,7 @@ func writeTime(buf *bytes.Buffer, f *TextFormat, t time.Time) {
 		writeIntn(buf, day, 2)
 		buf.WriteByte(' ')
 	}
-
 	if f.Time || f.Microseconds {
-
-		const timeSeparator = ':'
-
 		hour, min, sec := t.Clock()
 		writeIntn(buf, hour, 2)
 		buf.WriteByte(timeSeparator)

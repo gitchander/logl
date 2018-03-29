@@ -15,14 +15,14 @@ const (
 )
 
 func text_format(r *Record, timeFlag int) (data []byte) {
-	data = append_level(data, r.Level)
-	data = append_time(data, timeFlag, r.Time)
-	data = append_message(data, r.Message)
+	data = appendLevel(data, r.Level)
+	data = appendTime(data, timeFlag, r.Time)
+	data = appendMessage(data, r.Message)
 	data = append(data, '\n')
 	return
 }
 
-func append_level(data []byte, level Level) []byte {
+func appendLevel(data []byte, level Level) []byte {
 
 	switch level {
 	case LevelCritical:
@@ -35,6 +35,8 @@ func append_level(data []byte, level Level) []byte {
 		data = append(data, tag_Info...)
 	case LevelDebug:
 		data = append(data, tag_Debug...)
+	case LevelTrace:
+		data = append(data, tag_Trace...)
 	}
 
 	data = append(data, ' ')
@@ -42,7 +44,7 @@ func append_level(data []byte, level Level) []byte {
 	return data
 }
 
-func append_time(data []byte, flag int, t time.Time) []byte {
+func appendTime(data []byte, flag int, t time.Time) []byte {
 
 	if flag&(tf_DATE|tf_TIME|tf_MICROSECONDS) == 0 {
 		return data
@@ -50,24 +52,24 @@ func append_time(data []byte, flag int, t time.Time) []byte {
 
 	if flag&tf_DATE != 0 {
 		year, month, day := t.Date()
-		data = append_intc(data, year, 4)
+		data = appendIntc(data, year, 4)
 		data = append(data, '/')
-		data = append_intc(data, int(month), 2)
+		data = appendIntc(data, int(month), 2)
 		data = append(data, '/')
-		data = append_intc(data, day, 2)
+		data = appendIntc(data, day, 2)
 		data = append(data, ' ')
 	}
 
 	if flag&(tf_TIME|tf_MICROSECONDS) != 0 {
 		hour, min, sec := t.Clock()
-		data = append_intc(data, hour, 2)
+		data = appendIntc(data, hour, 2)
 		data = append(data, ':')
-		data = append_intc(data, min, 2)
+		data = appendIntc(data, min, 2)
 		data = append(data, ':')
-		data = append_intc(data, sec, 2)
+		data = appendIntc(data, sec, 2)
 		if flag&tf_MICROSECONDS != 0 {
 			data = append(data, '.')
-			data = append_intc(data, t.Nanosecond()/1e3, 6)
+			data = appendIntc(data, t.Nanosecond()/1e3, 6)
 		}
 		data = append(data, ' ')
 	}
@@ -75,7 +77,7 @@ func append_time(data []byte, flag int, t time.Time) []byte {
 	return data
 }
 
-func append_message(data []byte, m string) []byte {
+func appendMessage(data []byte, m string) []byte {
 	runeBuf := make([]byte, utf8.UTFMax)
 	for _, r := range m {
 		switch r {
@@ -95,7 +97,7 @@ func append_message(data []byte, m string) []byte {
 	return data
 }
 
-func append_intc(data []byte, x int, count int) []byte {
+func appendIntc(data []byte, x int, count int) []byte {
 	begin := len(data)
 	for i := 0; i < count; i++ {
 		quo, rem := quoRem(x, 10)

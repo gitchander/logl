@@ -6,113 +6,158 @@ import (
 	"time"
 )
 
-type Config struct {
-	Handler Handler
-	Level   Level
+type Logger interface {
+	SetLevel(Level)
+	Level() Level
+
+	Critical(vs ...interface{})
+	Error(vs ...interface{})
+	Warning(vs ...interface{})
+	Info(vs ...interface{})
+	Debug(vs ...interface{})
+	Trace(vs ...interface{})
+
+	Criticalf(format string, vs ...interface{})
+	Errorf(format string, vs ...interface{})
+	Warningf(format string, vs ...interface{})
+	Infof(format string, vs ...interface{})
+	Debugf(format string, vs ...interface{})
+	Tracef(format string, vs ...interface{})
 }
 
-type Logger struct {
-	locker  sync.Locker
+type dummyLogger struct{}
+
+func (dummyLogger) SetLevel(Level) {}
+func (dummyLogger) Level() Level   { return LevelOff }
+
+func (dummyLogger) Critical(vs ...interface{}) {}
+func (dummyLogger) Error(vs ...interface{})    {}
+func (dummyLogger) Warning(vs ...interface{})  {}
+func (dummyLogger) Info(vs ...interface{})     {}
+func (dummyLogger) Debug(vs ...interface{})    {}
+func (dummyLogger) Trace(vs ...interface{})    {}
+
+func (dummyLogger) Criticalf(format string, vs ...interface{}) {}
+func (dummyLogger) Errorf(format string, vs ...interface{})    {}
+func (dummyLogger) Warningf(format string, vs ...interface{})  {}
+func (dummyLogger) Infof(format string, vs ...interface{})     {}
+func (dummyLogger) Debugf(format string, vs ...interface{})    {}
+func (dummyLogger) Tracef(format string, vs ...interface{})    {}
+
+var DummyLogger Logger = dummyLogger{}
+
+type HandleLogger struct {
+	mutex   sync.Mutex
 	handler Handler
 	level   Level
 }
 
-func New(c Config) *Logger {
-	return &Logger{
-		locker:  new(sync.Mutex),
-		handler: c.Handler,
-		level:   c.Level,
+var _ Logger = &HandleLogger{}
+
+func NewHandleLogger(handler Handler, level Level) *HandleLogger {
+	return &HandleLogger{
+		handler: handler,
+		level:   level,
 	}
 }
 
-func (l *Logger) SetHandler(handler Handler) {
-	l.locker.Lock()
+func (l *HandleLogger) SetHandler(handler Handler) {
+	l.mutex.Lock()
 	if handler != nil {
 		l.handler = handler
 	} else {
 		l.handler = FakeHandler
 	}
-	l.locker.Unlock()
+	l.mutex.Unlock()
 }
 
-func (l *Logger) Level() (level Level) {
-	l.locker.Lock()
+func (l *HandleLogger) Level() (level Level) {
+	l.mutex.Lock()
 	level = l.level
-	l.locker.Unlock()
+	l.mutex.Unlock()
 	return
 }
 
-func (l *Logger) SetLevel(level Level) {
-	l.locker.Lock()
+func (l *HandleLogger) SetLevel(level Level) {
+	l.mutex.Lock()
 	l.level = level
-	l.locker.Unlock()
+	l.mutex.Unlock()
 }
 
-func (l *Logger) handleMessage(level Level, format *string, vs ...interface{}) {
-	l.locker.Lock()
-	defer l.locker.Unlock() // unlocks even if the handler call panic
+func (l *HandleLogger) handleMessage(level Level, format *string, vs ...interface{}) {
 
-	if level <= l.level {
-
-		r := &Record{
-			Time:  time.Now(),
-			Level: level,
-		}
-
-		if format != nil {
-			r.Message = fmt.Sprintf(*format, vs...)
-		} else {
-			r.Message = fmt.Sprint(vs...)
-		}
-
-		l.handler.Handle(r)
+	l.mutex.Lock()
+	if level > l.level {
+		l.mutex.Unlock()
+		return
 	}
+	defer l.mutex.Unlock() // unlocks even if the handler call panic
+
+	r := &Record{
+		Time:  time.Now(),
+		Level: level,
+	}
+	if format != nil {
+		r.Message = fmt.Sprintf(*format, vs...)
+	} else {
+		r.Message = fmt.Sprint(vs...)
+	}
+
+	l.handler.Handle(r)
 }
 
-func (l *Logger) Message(level Level, vs ...interface{}) {
+func (l *HandleLogger) Message(level Level, vs ...interface{}) {
 	l.handleMessage(level, nil, vs...)
 }
 
-func (l *Logger) Messagef(level Level, format string, vs ...interface{}) {
+func (l *HandleLogger) Messagef(level Level, format string, vs ...interface{}) {
 	l.handleMessage(level, &format, vs...)
 }
 
-func (l *Logger) Critical(vs ...interface{}) {
+func (l *HandleLogger) Critical(vs ...interface{}) {
 	l.handleMessage(LevelCritical, nil, vs...)
 }
 
-func (l *Logger) Criticalf(format string, vs ...interface{}) {
+func (l *HandleLogger) Criticalf(format string, vs ...interface{}) {
 	l.handleMessage(LevelCritical, &format, vs...)
 }
 
-func (l *Logger) Error(vs ...interface{}) {
+func (l *HandleLogger) Error(vs ...interface{}) {
 	l.handleMessage(LevelError, nil, vs...)
 }
 
-func (l *Logger) Errorf(format string, vs ...interface{}) {
+func (l *HandleLogger) Errorf(format string, vs ...interface{}) {
 	l.handleMessage(LevelError, &format, vs...)
 }
 
-func (l *Logger) Warning(vs ...interface{}) {
+func (l *HandleLogger) Warning(vs ...interface{}) {
 	l.handleMessage(LevelWarning, nil, vs...)
 }
 
-func (l *Logger) Warningf(format string, vs ...interface{}) {
+func (l *HandleLogger) Warningf(format string, vs ...interface{}) {
 	l.handleMessage(LevelWarning, &format, vs...)
 }
 
-func (l *Logger) Info(vs ...interface{}) {
+func (l *HandleLogger) Info(vs ...interface{}) {
 	l.handleMessage(LevelInfo, nil, vs...)
 }
 
-func (l *Logger) Infof(format string, vs ...interface{}) {
+func (l *HandleLogger) Infof(format string, vs ...interface{}) {
 	l.handleMessage(LevelInfo, &format, vs...)
 }
 
-func (l *Logger) Debug(vs ...interface{}) {
+func (l *HandleLogger) Debug(vs ...interface{}) {
 	l.handleMessage(LevelDebug, nil, vs...)
 }
 
-func (l *Logger) Debugf(format string, vs ...interface{}) {
+func (l *HandleLogger) Debugf(format string, vs ...interface{}) {
 	l.handleMessage(LevelDebug, &format, vs...)
+}
+
+func (l *HandleLogger) Trace(vs ...interface{}) {
+	l.handleMessage(LevelTrace, nil, vs...)
+}
+
+func (l *HandleLogger) Tracef(format string, vs ...interface{}) {
+	l.handleMessage(LevelTrace, &format, vs...)
 }

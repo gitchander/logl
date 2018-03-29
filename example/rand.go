@@ -8,7 +8,7 @@ import (
 	"github.com/gitchander/logl"
 )
 
-func newRand() *rand.Rand {
+func newRandFromTime() *rand.Rand {
 	return rand.New(rand.NewSource(time.Now().UTC().UnixNano()))
 }
 
@@ -48,28 +48,25 @@ func randIntRange(r *rand.Rand, min, max int) int {
 	return min + r.Intn(max-min+1)
 }
 
-func randLevel(r *rand.Rand) (level logl.Level) {
-	switch k := r.Intn(5); k {
-	case 0:
-		level = logl.LevelCritical
-	case 1:
-		level = logl.LevelError
-	case 2:
-		level = logl.LevelWarning
-	case 3:
-		level = logl.LevelInfo
-	case 4:
-		level = logl.LevelDebug
-	}
-	return
+var levels = []logl.Level{
+	logl.LevelCritical,
+	logl.LevelError,
+	logl.LevelWarning,
+	logl.LevelInfo,
+	logl.LevelDebug,
+	logl.LevelTrace,
 }
 
-func randLogMessage(r *rand.Rand, l *logl.Logger) {
+func randLevel(r *rand.Rand) logl.Level {
+	return levels[r.Intn(len(levels))]
+}
+
+func randLogMessage(r *rand.Rand, l logl.Logger) {
 	var (
 		n_word = randIntRange(r, 3, 10)
 		line   = randLine(r, n_word)
 	)
-	switch c := r.Intn(5); c {
+	switch c := r.Intn(6); c {
 	case 0:
 		l.Debug(line)
 	case 1:
@@ -80,5 +77,24 @@ func randLogMessage(r *rand.Rand, l *logl.Logger) {
 		l.Error(line)
 	case 4:
 		l.Critical(line)
+	case 5:
+		l.Trace(line)
+	}
+}
+
+func logMessage(l logl.Logger, level logl.Level, message string) {
+	switch level {
+	case logl.LevelCritical:
+		l.Critical(message)
+	case logl.LevelError:
+		l.Error(message)
+	case logl.LevelWarning:
+		l.Warning(message)
+	case logl.LevelInfo:
+		l.Info(message)
+	case logl.LevelDebug:
+		l.Debug(message)
+	case logl.LevelTrace:
+		l.Trace(message)
 	}
 }

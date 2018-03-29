@@ -8,29 +8,33 @@ import (
 type Level int
 
 const (
-	_ Level = iota
-
-	LevelCritical // log: [ Critical ]
-	LevelError    // log: [ Critical, Error ]
-	LevelWarning  // log: [ Critical, Error, Warning ]
-	LevelInfo     // log: [ Critical, Error, Warning, Info ]
-	LevelDebug    // log: [ Critical, Error, Warning, Info, Debug ]
+	LevelOff      Level = iota // log: [ ]
+	LevelCritical              // log: [ Critical ]
+	LevelError                 // log: [ Critical, Error ]
+	LevelWarning               // log: [ Critical, Error, Warning ]
+	LevelInfo                  // log: [ Critical, Error, Warning, Info ]
+	LevelDebug                 // log: [ Critical, Error, Warning, Info, Debug ]
+	LevelTrace                 // log: [ Critical, Error, Warning, Info, Debug, Trace ]
 )
 
 var name_Level = map[Level]string{
+	LevelOff:      "off",
 	LevelCritical: "critical",
 	LevelError:    "error",
 	LevelWarning:  "warning",
 	LevelInfo:     "info",
 	LevelDebug:    "debug",
+	LevelTrace:    "trace",
 }
 
 var value_Level = map[string]Level{
+	"off":      LevelOff,
 	"critical": LevelCritical,
 	"error":    LevelError,
 	"warning":  LevelWarning,
 	"info":     LevelInfo,
 	"debug":    LevelDebug,
+	"trace":    LevelTrace,
 }
 
 func (l Level) String() string {
