@@ -1,8 +1,6 @@
 package logl
 
-import (
-	"bytes"
-)
+import "bytes"
 
 type formatJSON struct {
 	buf bytes.Buffer
@@ -22,7 +20,7 @@ func (f *formatJSON) Format(r *Record) []byte {
 	return buf.Bytes()
 }
 
-func FormatJSON() Format {
+func FormatJSON() Formatter {
 	return new(formatJSON)
 }
 

@@ -2,6 +2,7 @@ package logl
 
 import (
 	"io"
+	"sync"
 	"time"
 )
 
@@ -25,11 +26,11 @@ func (h funcHandler) Handle(r *Record) {
 	h(r)
 }
 
-type fakeHandler struct{}
+type dummyHandler struct{}
 
-func (fakeHandler) Handle(*Record) {}
+func (dummyHandler) Handle(*Record) {}
 
-var FakeHandler Handler = fakeHandler{}
+var DummyHandler Handler = dummyHandler{}
 
 func MultiHandler(hs ...Handler) Handler {
 	return FuncHandler(
@@ -53,7 +54,7 @@ func FilterHandler(filter func(*Record) bool, handler Handler) Handler {
 
 type StreamHandler struct {
 	Output io.Writer
-	Format Format
+	Format Formatter
 }
 
 func (p *StreamHandler) Handle(r *Record) {
@@ -69,3 +70,21 @@ func (p *StreamHandler) Handle(r *Record) {
 //		},
 //	)
 //}
+
+type guardHandler struct {
+	mutex   sync.Mutex
+	handler Handler
+}
+
+func (gh *guardHandler) Handle(r *Record) {
+	gh.mutex.Lock()
+	defer gh.mutex.Unlock()
+
+	gh.handler.Handle(r)
+}
+
+func newGuardHandler(handler Handler) *guardHandler {
+	return &guardHandler{handler: handler}
+}
+
+var _ Handler = &guardHandler{}

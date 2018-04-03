@@ -57,29 +57,16 @@ var levels = []logl.Level{
 	logl.LevelTrace,
 }
 
-func randLevel(r *rand.Rand) logl.Level {
+func randLogLevel(r *rand.Rand) logl.Level {
 	return levels[r.Intn(len(levels))]
 }
 
 func randLogMessage(r *rand.Rand, l logl.Logger) {
 	var (
-		n_word = randIntRange(r, 3, 10)
-		line   = randLine(r, n_word)
+		level   = randLogLevel(r)
+		message = randLine(r, randIntRange(r, 3, 10))
 	)
-	switch c := r.Intn(6); c {
-	case 0:
-		l.Debug(line)
-	case 1:
-		l.Info(line)
-	case 2:
-		l.Warning(line)
-	case 3:
-		l.Error(line)
-	case 4:
-		l.Critical(line)
-	case 5:
-		l.Trace(line)
-	}
+	logMessage(l, level, message)
 }
 
 func logMessage(l logl.Logger, level logl.Level, message string) {

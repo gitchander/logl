@@ -3,6 +3,7 @@ package logl
 import (
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -47,18 +48,19 @@ func (dummyLogger) Tracef(format string, vs ...interface{})    {}
 var DummyLogger Logger = dummyLogger{}
 
 type HandleLogger struct {
+	a_level int32
+
 	mutex   sync.Mutex
 	handler Handler
-	level   Level
 }
 
 var _ Logger = &HandleLogger{}
 
-func NewHandleLogger(handler Handler, level Level) *HandleLogger {
-	return &HandleLogger{
-		handler: handler,
-		level:   level,
-	}
+func NewHandleLogger(level Level, handler Handler) *HandleLogger {
+	var l HandleLogger
+	l.SetLevel(level)
+	l.SetHandler(handler)
+	return &l
 }
 
 func (l *HandleLogger) SetHandler(handler Handler) {
@@ -66,34 +68,26 @@ func (l *HandleLogger) SetHandler(handler Handler) {
 	if handler != nil {
 		l.handler = handler
 	} else {
-		l.handler = FakeHandler
+		l.handler = DummyHandler
 	}
 	l.mutex.Unlock()
 }
 
-func (l *HandleLogger) Level() (level Level) {
-	l.mutex.Lock()
-	level = l.level
-	l.mutex.Unlock()
-	return
+func (l *HandleLogger) Level() Level {
+	return Level(atomic.LoadInt32(&l.a_level))
 }
 
 func (l *HandleLogger) SetLevel(level Level) {
-	l.mutex.Lock()
-	l.level = level
-	l.mutex.Unlock()
+	atomic.StoreInt32(&l.a_level, int32(level))
 }
 
 func (l *HandleLogger) handleMessage(level Level, format *string, vs ...interface{}) {
 
-	l.mutex.Lock()
-	if level > l.level {
-		l.mutex.Unlock()
+	if level > l.Level() {
 		return
 	}
-	defer l.mutex.Unlock() // unlocks even if the handler call panic
 
-	r := &Record{
+	var r = Record{
 		Time:  time.Now(),
 		Level: level,
 	}
@@ -103,7 +97,10 @@ func (l *HandleLogger) handleMessage(level Level, format *string, vs ...interfac
 		r.Message = fmt.Sprint(vs...)
 	}
 
-	l.handler.Handle(r)
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
+
+	l.handler.Handle(&r)
 }
 
 func (l *HandleLogger) Message(level Level, vs ...interface{}) {

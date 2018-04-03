@@ -1,5 +1,5 @@
 package logl
 
-type Format interface {
+type Formatter interface {
 	Format(*Record) []byte
 }

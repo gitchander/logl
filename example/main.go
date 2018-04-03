@@ -14,8 +14,8 @@ func main() {
 	exampleLogStdout()
 	exampleLogOff()
 	exampleLogFile()
-	examplePanic()
 	exampleThreads()
+	examplePanic()
 }
 
 func use(l logl.Logger) {
@@ -27,6 +27,7 @@ func use(l logl.Logger) {
 
 func exampleLogStdout() {
 	l := logl.NewHandleLogger(
+		logl.LevelTrace,
 		&logl.StreamHandler{
 			Output: os.Stdout,
 			Format: &logl.FormatText{
@@ -35,7 +36,6 @@ func exampleLogStdout() {
 				ShieldSpecial: true,
 			},
 		},
-		logl.LevelTrace,
 	)
 	use(l)
 	l.Error("my error no %d", 78)
@@ -43,6 +43,7 @@ func exampleLogStdout() {
 
 func exampleLogOff() {
 	l := logl.NewHandleLogger(
+		logl.LevelOff,
 		&logl.StreamHandler{
 			Output: os.Stdout,
 			Format: &logl.FormatText{
@@ -50,14 +51,13 @@ func exampleLogOff() {
 				Time:     true,
 			},
 		},
-		logl.LevelOff,
 	)
 	use(l)
 }
 
 func exampleLogFile() {
 
-	file, err := os.OpenFile("test.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	file, err := os.OpenFile("test1.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
 		return
 	}
@@ -67,15 +67,17 @@ func exampleLogFile() {
 	defer bw.Flush()
 
 	l := logl.NewHandleLogger(
+		logl.LevelWarning,
 		&logl.StreamHandler{
 			Output: bw,
 			Format: &logl.FormatText{
-				Date:         true,
-				Microseconds: true,
+				Date:          true,
+				Microseconds:  true,
+				ShieldSpecial: true,
 			},
 		},
-		logl.LevelWarning,
 	)
+
 	use(l)
 }
 
@@ -90,13 +92,13 @@ func examplePanic() {
 	}
 
 	l := logl.NewHandleLogger(
+		logl.LevelInfo,
 		logl.FuncHandler(func(r *logl.Record) {
 			sh.Handle(r)
 			if r.Level == logl.LevelCritical {
 				panic(r.Message)
 			}
 		}),
-		logl.LevelInfo,
 	)
 
 	panicMessageRecover(l)
@@ -117,7 +119,7 @@ func panicMessageRecover(l logl.Logger) {
 }
 
 func exampleThreads() {
-	file, err := os.OpenFile("test1.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	file, err := os.OpenFile("test2.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
 		return
 	}
@@ -127,16 +129,17 @@ func exampleThreads() {
 	defer bw.Flush()
 
 	l := logl.NewHandleLogger(
+		logl.LevelWarning,
 		logl.MultiHandler(
-			logl.FakeHandler,
+			logl.DummyHandler,
 			&logl.StreamHandler{
 				Output: bw,
 				Format: logl.FormatJSON(),
 			},
 			&logl.StreamHandler{
 				Output: os.Stdout,
-				//Format: logl.FormatJSON(),
-				//Format: new(customTextFormat),
+				//Formatter: logl.FormatJSON(),
+				//Formatter: new(customTextFormat),
 				Format: &logl.FormatText{
 					HasLevel:      true,
 					Date:          true,
@@ -146,7 +149,6 @@ func exampleThreads() {
 				},
 			},
 		),
-		logl.LevelWarning,
 	)
 	var wg sync.WaitGroup
 	const n = 100
@@ -156,7 +158,7 @@ func exampleThreads() {
 			r := newRandSeed(int64(id))
 			for j := 0; j < 100; j++ {
 				var (
-					level = randLevel(r)
+					level = randLogLevel(r)
 					// message = fmt.Sprintf("id(%d):%s", id, randLine(r, randIntRange(r, 3, 8)))
 					message = randLine(r, randIntRange(r, 3, 8))
 				)
