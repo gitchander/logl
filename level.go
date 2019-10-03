@@ -2,7 +2,8 @@ package logl
 
 import (
 	"fmt"
-	"strconv"
+
+	"encoding"
 )
 
 type Level int
@@ -17,7 +18,7 @@ const (
 	LevelTrace                 // log: [ Critical, Error, Warning, Info, Debug, Trace ]
 )
 
-var name_Level = map[Level]string{
+var namesLevel = map[Level]string{
 	LevelOff:      "off",
 	LevelCritical: "critical",
 	LevelError:    "error",
@@ -27,7 +28,7 @@ var name_Level = map[Level]string{
 	LevelTrace:    "trace",
 }
 
-var value_Level = map[string]Level{
+var valuesLevel = map[string]Level{
 	"off":      LevelOff,
 	"critical": LevelCritical,
 	"error":    LevelError,
@@ -38,16 +39,49 @@ var value_Level = map[string]Level{
 }
 
 func (l Level) String() string {
-	if name, ok := name_Level[l]; ok {
+	if name, ok := namesLevel[l]; ok {
 		return name
 	}
-	return strconv.Itoa(int(l))
+	return fmt.Sprintf("Level(%d)", l)
 }
 
 func ParseLevel(s string) (Level, error) {
-	level, ok := value_Level[s]
-	if ok {
-		return level, nil
+	name := s
+	level, ok := valuesLevel[name]
+	if !ok {
+		return 0, fmt.Errorf("logl.ParseLevel() invalid name %q", name)
 	}
-	return level, fmt.Errorf("invalid log level: %s", s)
+	return level, nil
+}
+
+func _() {
+	var l Level
+	var (
+		_ encoding.TextMarshaler   = l
+		_ encoding.TextUnmarshaler = &l
+	)
+}
+
+var (
+	_ encoding.TextMarshaler   = Level(0)
+	_ encoding.TextUnmarshaler = (*Level)(nil)
+)
+
+func (l Level) MarshalText() (text []byte, err error) {
+	value := l
+	name, ok := namesLevel[value]
+	if !ok {
+		return nil, fmt.Errorf("logl.Level.MarshalText() invalid value %d", value)
+	}
+	return []byte(name), nil
+}
+
+func (l *Level) UnmarshalText(text []byte) error {
+	name := string(text)
+	value, ok := valuesLevel[name]
+	if !ok {
+		return fmt.Errorf("logl.Level.UnmarshalText() invalid name %q", name)
+	}
+	*l = value
+	return nil
 }
