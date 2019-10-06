@@ -9,14 +9,12 @@ func lastByteIs(s string, b byte) bool {
 
 func quoRem(x, y int) (quo, rem int) {
 	quo = x / y
-	rem = x - quo*y
+	rem = x % y
 	return
 }
 
-func flip(data []byte) {
-	i, j := 0, len(data)-1
-	for i < j {
-		data[i], data[j] = data[j], data[i]
-		i, j = i+1, j-1
-	}
-}
+// func quoRem(x, y int) (quo, rem int) {
+// 	quo = x / y
+// 	rem = x - quo*y
+// 	return
+// }

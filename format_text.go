@@ -19,7 +19,7 @@ type FormatText struct {
 	Date          bool
 	Time          bool
 	Microseconds  bool
-	ShieldSpecial bool // { '\n', '\r', '\t' }
+	ShieldSpecial bool // { '\n', '\r', '\t', '\\' }
 }
 
 func (f *FormatText) Format(r *Record) []byte {
@@ -72,41 +72,42 @@ const (
 )
 
 func writeTime(buf *bytes.Buffer, f *FormatText, t time.Time) {
+	const base = 10
 	if f.Date {
 		year, month, day := t.Date()
-		writeIntn(buf, year, 4)
+		buf.Write(formatIntn(year, base, 4))
 		buf.WriteByte(dateSeparator)
-		writeIntn(buf, int(month), 2)
+		buf.Write(formatIntn(int(month), base, 2))
 		buf.WriteByte(dateSeparator)
-		writeIntn(buf, day, 2)
+		buf.Write(formatIntn(day, base, 2))
 		buf.WriteByte(' ')
 	}
 	if f.Time || f.Microseconds {
 		hour, min, sec := t.Clock()
-		writeIntn(buf, hour, 2)
+		buf.Write(formatIntn(hour, base, 2))
 		buf.WriteByte(timeSeparator)
-		writeIntn(buf, min, 2)
+		buf.Write(formatIntn(min, base, 2))
 		buf.WriteByte(timeSeparator)
-		writeIntn(buf, sec, 2)
+		buf.Write(formatIntn(sec, base, 2))
 		if f.Microseconds {
 			buf.WriteByte('.')
-			writeIntn(buf, t.Nanosecond()/1e3, 6)
+			microseconds := t.Nanosecond() / 1e3
+			buf.Write(formatIntn(microseconds, base, 6))
 		}
 		buf.WriteByte(' ')
 	}
 }
 
-func writeIntn(buf *bytes.Buffer, d int, n int) {
-	const base = 10
+var digits = []byte("0123456789abcdefghijklmnopqrstuvwxyz")
+
+func formatIntn(d int, base int, n int) []byte {
 	data := make([]byte, n)
-	i := len(data)
-	for range data {
+	for i := n; i > 0; i-- {
 		quo, rem := quoRem(d, base)
-		i--
-		data[i] = byte('0' + rem)
+		data[i-1] = digits[rem]
 		d = quo
 	}
-	buf.Write(data)
+	return data
 }
 
 func writeShieldSpecial(buf *bytes.Buffer, m string) {

@@ -107,3 +107,11 @@ func appendIntc(data []byte, x int, count int) []byte {
 	flip(data[begin:len(data)])
 	return data
 }
+
+func flip(data []byte) {
+	i, j := 0, len(data)-1
+	for i < j {
+		data[i], data[j] = data[j], data[i]
+		i, j = i+1, j-1
+	}
+}
