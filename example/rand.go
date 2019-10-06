@@ -66,22 +66,5 @@ func randLogMessage(r *rand.Rand, l logl.Logger) {
 		level   = randLogLevel(r)
 		message = randLine(r, randIntRange(r, 3, 10))
 	)
-	logMessage(l, level, message)
-}
-
-func logMessage(l logl.Logger, level logl.Level, message string) {
-	switch level {
-	case logl.LevelCritical:
-		l.Critical(message)
-	case logl.LevelError:
-		l.Error(message)
-	case logl.LevelWarning:
-		l.Warning(message)
-	case logl.LevelInfo:
-		l.Info(message)
-	case logl.LevelDebug:
-		l.Debug(message)
-	case logl.LevelTrace:
-		l.Trace(message)
-	}
+	l.Log(level, message)
 }

@@ -162,7 +162,7 @@ func exampleThreads() {
 					// message = fmt.Sprintf("id(%d):%s", id, randLine(r, randIntRange(r, 3, 8)))
 					message = randLine(r, randIntRange(r, 3, 8))
 				)
-				logMessage(l, level, message)
+				l.Log(level, message)
 			}
 			wg.Done()
 		}(i)

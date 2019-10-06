@@ -7,7 +7,16 @@ import (
 	"time"
 )
 
+// Concept of simple interface:
+// type ILogger interface {
+// 	Log(level Level, vs ...interface{})
+// 	Logf(level Level, format string, vs ...interface{})
+// }
+
 type Logger interface {
+	Log(level Level, vs ...interface{})
+	Logf(level Level, format string, vs ...interface{})
+
 	SetLevel(Level)
 	Level() Level
 
@@ -28,6 +37,11 @@ type Logger interface {
 
 type dummyLogger struct{}
 
+var DummyLogger Logger = dummyLogger{}
+
+func (dummyLogger) Log(level Level, vs ...interface{})                 {}
+func (dummyLogger) Logf(level Level, format string, vs ...interface{}) {}
+
 func (dummyLogger) SetLevel(Level) {}
 func (dummyLogger) Level() Level   { return LevelOff }
 
@@ -44,8 +58,6 @@ func (dummyLogger) Warningf(format string, vs ...interface{})  {}
 func (dummyLogger) Infof(format string, vs ...interface{})     {}
 func (dummyLogger) Debugf(format string, vs ...interface{})    {}
 func (dummyLogger) Tracef(format string, vs ...interface{})    {}
-
-var DummyLogger Logger = dummyLogger{}
 
 type HandleLogger struct {
 	a_level int32
@@ -103,11 +115,11 @@ func (l *HandleLogger) handleMessage(level Level, format *string, vs ...interfac
 	l.handler.Handle(&r)
 }
 
-func (l *HandleLogger) Message(level Level, vs ...interface{}) {
+func (l *HandleLogger) Log(level Level, vs ...interface{}) {
 	l.handleMessage(level, nil, vs...)
 }
 
-func (l *HandleLogger) Messagef(level Level, format string, vs ...interface{}) {
+func (l *HandleLogger) Logf(level Level, format string, vs ...interface{}) {
 	l.handleMessage(level, &format, vs...)
 }
 
