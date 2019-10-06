@@ -44,7 +44,7 @@ func writeTextFormat(buf *bytes.Buffer, r *Record, f *FormatText) {
 	} else {
 		buf.WriteString(r.Message)
 	}
-	if !lastByteIs(r.Message, '\n') {
+	if f.ShieldSpecial || !lastByteIs(r.Message, '\n') {
 		buf.WriteByte('\n')
 	}
 }
