@@ -85,3 +85,7 @@ func (l *Level) UnmarshalText(text []byte) error {
 	*l = value
 	return nil
 }
+
+func LevelAllow(level Level, l Logger) bool {
+	return level <= l.Level()
+}

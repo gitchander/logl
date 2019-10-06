@@ -60,9 +60,9 @@ func (dummyLogger) Debugf(format string, vs ...interface{})    {}
 func (dummyLogger) Tracef(format string, vs ...interface{})    {}
 
 type HandleLogger struct {
-	a_level int32
+	atomicLevel int32
 
-	mutex   sync.Mutex
+	guard   sync.Mutex // protect handler
 	handler Handler
 }
 
@@ -76,21 +76,21 @@ func NewHandleLogger(level Level, handler Handler) *HandleLogger {
 }
 
 func (l *HandleLogger) SetHandler(handler Handler) {
-	l.mutex.Lock()
+	l.guard.Lock()
 	if handler != nil {
 		l.handler = handler
 	} else {
 		l.handler = DummyHandler
 	}
-	l.mutex.Unlock()
+	l.guard.Unlock()
 }
 
 func (l *HandleLogger) Level() Level {
-	return Level(atomic.LoadInt32(&l.a_level))
+	return Level(atomic.LoadInt32(&l.atomicLevel))
 }
 
 func (l *HandleLogger) SetLevel(level Level) {
-	atomic.StoreInt32(&l.a_level, int32(level))
+	atomic.StoreInt32(&l.atomicLevel, int32(level))
 }
 
 func (l *HandleLogger) handleMessage(level Level, format *string, vs ...interface{}) {
@@ -109,8 +109,8 @@ func (l *HandleLogger) handleMessage(level Level, format *string, vs ...interfac
 		r.Message = fmt.Sprint(vs...)
 	}
 
-	l.mutex.Lock()
-	defer l.mutex.Unlock()
+	l.guard.Lock()
+	defer l.guard.Unlock()
 
 	l.handler.Handle(&r)
 }
