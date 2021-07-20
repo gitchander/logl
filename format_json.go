@@ -1,51 +1,70 @@
 package logl
 
-import "bytes"
+import (
+	"bytes"
+	"strconv"
+	"time"
+)
+
+const (
+	// timeFormat = "2006-01-02 15:04:05"
+	// timeFormat = time.RFC3339
+	timeFormat = time.RFC3339Nano
+)
 
 type formatJSON struct {
-	buf bytes.Buffer
+	b bytes.Buffer
 }
 
 func (f *formatJSON) Format(r *Record) []byte {
-	buf := &(f.buf)
-	buf.Reset()
-	buf.WriteByte('{')
-	jsonEncodePair(buf, "time", r.Time.Format("2006-01-02 15:04:05"))
-	buf.WriteByte(',')
-	jsonEncodePair(buf, "level", r.Level.String())
-	buf.WriteByte(',')
-	jsonEncodePair(buf, "message", r.Message)
-	buf.WriteByte('}')
-	buf.WriteByte('\n')
-	return buf.Bytes()
+	b := &(f.b)
+	b.Reset()
+	b.WriteByte('{')
+	jsonEncodePair(b, "time", r.Time.Format(timeFormat))
+	b.WriteByte(',')
+	jsonEncodePair(b, "level", r.Level.String())
+	b.WriteByte(',')
+	jsonEncodePair(b, "message", r.Message)
+	b.WriteByte('}')
+	b.WriteByte('\n')
+	return b.Bytes()
 }
 
 func FormatJSON() Formatter {
 	return new(formatJSON)
 }
 
-func jsonEncodePair(buf *bytes.Buffer, name, value string) {
-	jsonEncodeString(buf, name)
-	buf.WriteByte(':')
-	jsonEncodeString(buf, value)
+func jsonEncodePair(b *bytes.Buffer, name, value string) {
+	jsonEncodeString(b, name)
+	b.WriteByte(':')
+	jsonEncodeString(b, value)
 }
 
-func jsonEncodeString(buf *bytes.Buffer, str string) {
-	buf.WriteByte('"')
+var (
+	//jsonEncodeString = jsonEncodeString1
+	jsonEncodeString = jsonEncodeString2
+)
+
+func jsonEncodeString1(b *bytes.Buffer, str string) {
+	b.WriteString(strconv.Quote(str))
+}
+
+func jsonEncodeString2(b *bytes.Buffer, str string) {
+	b.WriteByte('"')
 	for _, r := range str {
 		switch r {
 		case '\n':
-			buf.WriteString("\\n")
+			b.WriteString("\\n")
 		case '\r':
-			buf.WriteString("\\r")
+			b.WriteString("\\r")
 		case '\t':
-			buf.WriteString("\\t")
+			b.WriteString("\\t")
 		case '"', '\\':
-			buf.WriteByte('\\')
-			buf.WriteByte(byte(r))
+			b.WriteByte('\\')
+			b.WriteByte(byte(r))
 		default:
-			buf.WriteRune(r)
+			b.WriteRune(r)
 		}
 	}
-	buf.WriteByte('"')
+	b.WriteByte('"')
 }

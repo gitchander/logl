@@ -23,22 +23,24 @@ func NewHandleLogger(level Level, handler Handler) *HandleLogger {
 	return &l
 }
 
-func (l *HandleLogger) SetHandler(handler Handler) {
-	l.guard.Lock()
-	if handler != nil {
-		l.handler = handler
-	} else {
-		l.handler = DummyHandler
-	}
-	l.guard.Unlock()
-}
-
 func (l *HandleLogger) Level() Level {
-	return Level(atomic.LoadInt32(&l.atomicLevel))
+	return Level(atomic.LoadInt32(&(l.atomicLevel)))
 }
 
 func (l *HandleLogger) SetLevel(level Level) {
-	atomic.StoreInt32(&l.atomicLevel, int32(level))
+	atomic.StoreInt32(&(l.atomicLevel), int32(level))
+}
+
+func (l *HandleLogger) SetHandler(handler Handler) {
+
+	if handler == nil {
+		handler = DummyHandler
+	}
+
+	l.guard.Lock()
+	defer l.guard.Unlock()
+
+	l.handler = handler
 }
 
 func (l *HandleLogger) handleMessage(level Level, format *string, vs ...interface{}) {

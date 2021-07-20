@@ -46,11 +46,11 @@ func appendLevel(data []byte, level Level) []byte {
 
 func appendTime(data []byte, flag int, t time.Time) []byte {
 
-	if flag&(tf_DATE|tf_TIME|tf_MICROSECONDS) == 0 {
+	if (flag & (tf_DATE | tf_TIME | tf_MICROSECONDS)) == 0 {
 		return data
 	}
 
-	if flag&tf_DATE != 0 {
+	if (flag & tf_DATE) != 0 {
 		year, month, day := t.Date()
 		data = appendIntc(data, year, 4)
 		data = append(data, '/')
@@ -60,7 +60,7 @@ func appendTime(data []byte, flag int, t time.Time) []byte {
 		data = append(data, ' ')
 	}
 
-	if flag&(tf_TIME|tf_MICROSECONDS) != 0 {
+	if (flag & (tf_TIME | tf_MICROSECONDS)) != 0 {
 		hour, min, sec := t.Clock()
 		data = appendIntc(data, hour, 2)
 		data = append(data, ':')
@@ -98,17 +98,18 @@ func appendMessage(data []byte, m string) []byte {
 }
 
 func appendIntc(data []byte, x int, count int) []byte {
+	const base = 10
 	begin := len(data)
+	var digitIndex int
 	for i := 0; i < count; i++ {
-		quo, rem := quoRem(x, 10)
-		data = append(data, byte('0'+rem))
-		x = quo
+		x, digitIndex = quoRem(x, base)
+		data = append(data, digits[digitIndex])
 	}
-	flip(data[begin:len(data)])
+	flipBytes(data[begin:len(data)])
 	return data
 }
 
-func flip(data []byte) {
+func flipBytes(data []byte) {
 	i, j := 0, len(data)-1
 	for i < j {
 		data[i], data[j] = data[j], data[i]

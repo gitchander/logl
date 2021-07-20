@@ -1,7 +1,7 @@
 package logl
 
-// Concept of a simple interface:
-type ILogger interface {
+// Concept of a most simple interface:
+type BaseLogger interface {
 	Log(level Level, vs ...interface{})
 	Logf(level Level, format string, vs ...interface{})
 
@@ -10,7 +10,7 @@ type ILogger interface {
 }
 
 type Logger interface {
-	ILogger
+	BaseLogger
 
 	Critical(vs ...interface{})
 	Error(vs ...interface{})

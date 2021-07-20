@@ -42,7 +42,7 @@ func (l Level) String() string {
 	if name, ok := namesLevel[l]; ok {
 		return name
 	}
-	return fmt.Sprintf("Level(%d)", l)
+	return fmt.Sprintf("Level(%d)", int(l))
 }
 
 func ParseLevel(s string) (Level, error) {

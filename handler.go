@@ -3,17 +3,10 @@ package logl
 import (
 	"io"
 	"sync"
-	"time"
 )
 
 type Handler interface {
 	Handle(*Record)
-}
-
-type Record struct {
-	Time    time.Time
-	Level   Level
-	Message string
 }
 
 func FuncHandler(fn func(*Record)) Handler {
@@ -72,13 +65,14 @@ func (p *StreamHandler) Handle(r *Record) {
 //}
 
 type guardHandler struct {
-	mutex   sync.Mutex
+	guard   sync.Mutex
 	handler Handler
 }
 
 func (gh *guardHandler) Handle(r *Record) {
-	gh.mutex.Lock()
-	defer gh.mutex.Unlock()
+
+	gh.guard.Lock()
+	defer gh.guard.Unlock()
 
 	gh.handler.Handle(r)
 }

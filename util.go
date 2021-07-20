@@ -12,9 +12,3 @@ func quoRem(x, y int) (quo, rem int) {
 	rem = x % y
 	return
 }
-
-// func quoRem(x, y int) (quo, rem int) {
-// 	quo = x / y
-// 	rem = x - quo*y
-// 	return
-// }

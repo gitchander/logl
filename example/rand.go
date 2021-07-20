@@ -8,12 +8,16 @@ import (
 	"github.com/gitchander/logl"
 )
 
-func newRandFromTime() *rand.Rand {
-	return rand.New(rand.NewSource(time.Now().UTC().UnixNano()))
-}
-
 func newRandSeed(seed int64) *rand.Rand {
 	return rand.New(rand.NewSource(seed))
+}
+
+func newRandTime(t time.Time) *rand.Rand {
+	return newRandSeed(t.UnixNano())
+}
+
+func newRandNow() *rand.Rand {
+	return newRandTime(time.Now())
 }
 
 func randLine(r *rand.Rand, n_word int) string {

@@ -4,7 +4,7 @@ type dummyLogger struct{}
 
 var _ Logger = dummyLogger{}
 
-func DummyLogger() Logger {
+func MakeDummyLogger() Logger {
 	return dummyLogger{}
 }
 

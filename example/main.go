@@ -19,7 +19,7 @@ func main() {
 }
 
 func use(l logl.Logger) {
-	r := newRandFromTime()
+	r := newRandNow()
 	for i := 0; i < 100; i++ {
 		randLogMessage(r, l)
 	}
@@ -32,13 +32,13 @@ func exampleLogStdout() {
 			Output: os.Stdout,
 			Format: &logl.FormatText{
 				HasLevel:      true,
-				Time:          true,
+				HasTime:       true,
 				ShieldSpecial: true,
 			},
 		},
 	)
 	use(l)
-	l.Error("my error no %d", 78)
+	l.Errorf("my error no %d", 78)
 }
 
 func exampleLogOff() {
@@ -48,7 +48,7 @@ func exampleLogOff() {
 			Output: os.Stdout,
 			Format: &logl.FormatText{
 				HasLevel: true,
-				Time:     true,
+				HasTime:  true,
 			},
 		},
 	)
@@ -71,9 +71,10 @@ func exampleLogFile() {
 		&logl.StreamHandler{
 			Output: bw,
 			Format: &logl.FormatText{
-				Date:          true,
-				Microseconds:  true,
-				ShieldSpecial: true,
+				HasLevel:        true,
+				HasDate:         true,
+				HasMicroseconds: true,
+				ShieldSpecial:   true,
 			},
 		},
 	)
@@ -87,7 +88,7 @@ func examplePanic() {
 		Output: os.Stdout,
 		Format: &logl.FormatText{
 			HasLevel: true,
-			Time:     true,
+			HasTime:  true,
 		},
 	}
 
@@ -141,11 +142,11 @@ func exampleThreads() {
 				//Formatter: logl.FormatJSON(),
 				//Formatter: new(customTextFormat),
 				Format: &logl.FormatText{
-					HasLevel:      true,
-					Date:          true,
-					Time:          true,
-					Microseconds:  true,
-					ShieldSpecial: true,
+					HasLevel:        true,
+					HasDate:         true,
+					HasTime:         true,
+					HasMicroseconds: true,
+					ShieldSpecial:   true,
 				},
 			},
 		),
