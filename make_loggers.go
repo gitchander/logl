@@ -21,6 +21,6 @@ func MakeLogger(level Level, w io.Writer) Logger {
 	)
 }
 
-func MakeStdoutLogger(level Level, w io.Writer) Logger {
+func MakeStdoutLogger(level Level) Logger {
 	return MakeLogger(level, os.Stdout)
 }

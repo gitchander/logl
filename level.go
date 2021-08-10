@@ -49,7 +49,7 @@ func ParseLevel(s string) (Level, error) {
 	name := s
 	level, ok := valuesLevel[name]
 	if !ok {
-		return 0, fmt.Errorf("logl.ParseLevel() invalid name %q", name)
+		return 0, fmt.Errorf("logl.ParseLevel: invalid name %q", name)
 	}
 	return level, nil
 }
@@ -71,7 +71,7 @@ func (l Level) MarshalText() (text []byte, err error) {
 	value := l
 	name, ok := namesLevel[value]
 	if !ok {
-		return nil, fmt.Errorf("logl.Level.MarshalText() invalid value %d", value)
+		return nil, fmt.Errorf("logl.Level.MarshalText: invalid value %d", value)
 	}
 	return []byte(name), nil
 }
@@ -80,7 +80,7 @@ func (l *Level) UnmarshalText(text []byte) error {
 	name := string(text)
 	value, ok := valuesLevel[name]
 	if !ok {
-		return fmt.Errorf("logl.Level.UnmarshalText() invalid name %q", name)
+		return fmt.Errorf("logl.Level.UnmarshalText: invalid name %q", name)
 	}
 	*l = value
 	return nil

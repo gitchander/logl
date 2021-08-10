@@ -2,7 +2,6 @@ package logl
 
 import (
 	"bytes"
-	"strconv"
 	"time"
 )
 
@@ -40,31 +39,8 @@ func jsonEncodePair(b *bytes.Buffer, name, value string) {
 	jsonEncodeString(b, value)
 }
 
-var (
-	//jsonEncodeString = jsonEncodeString1
-	jsonEncodeString = jsonEncodeString2
-)
-
-func jsonEncodeString1(b *bytes.Buffer, str string) {
-	b.WriteString(strconv.Quote(str))
-}
-
-func jsonEncodeString2(b *bytes.Buffer, str string) {
+func jsonEncodeString(b *bytes.Buffer, s string) {
 	b.WriteByte('"')
-	for _, r := range str {
-		switch r {
-		case '\n':
-			b.WriteString("\\n")
-		case '\r':
-			b.WriteString("\\r")
-		case '\t':
-			b.WriteString("\\t")
-		case '"', '\\':
-			b.WriteByte('\\')
-			b.WriteByte(byte(r))
-		default:
-			b.WriteRune(r)
-		}
-	}
+	writeString(b, s)
 	b.WriteByte('"')
 }

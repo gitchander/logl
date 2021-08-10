@@ -49,14 +49,17 @@ func (l *HandleLogger) handleMessage(level Level, format *string, vs ...interfac
 		return
 	}
 
-	var r = Record{
-		Time:  time.Now(),
-		Level: level,
-	}
+	var message string
 	if format != nil {
-		r.Message = fmt.Sprintf(*format, vs...)
+		message = fmt.Sprintf(*format, vs...)
 	} else {
-		r.Message = fmt.Sprint(vs...)
+		message = fmt.Sprint(vs...)
+	}
+
+	var r = Record{
+		Time:    time.Now(),
+		Level:   level,
+		Message: message,
 	}
 
 	l.guard.Lock()

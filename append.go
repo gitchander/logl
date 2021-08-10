@@ -52,24 +52,24 @@ func appendTime(data []byte, flag int, t time.Time) []byte {
 
 	if (flag & tf_DATE) != 0 {
 		year, month, day := t.Date()
-		data = appendIntc(data, year, 4)
+		data = appendIntn(data, year, 4)
 		data = append(data, '/')
-		data = appendIntc(data, int(month), 2)
+		data = appendIntn(data, int(month), 2)
 		data = append(data, '/')
-		data = appendIntc(data, day, 2)
+		data = appendIntn(data, day, 2)
 		data = append(data, ' ')
 	}
 
 	if (flag & (tf_TIME | tf_MICROSECONDS)) != 0 {
 		hour, min, sec := t.Clock()
-		data = appendIntc(data, hour, 2)
+		data = appendIntn(data, hour, 2)
 		data = append(data, ':')
-		data = appendIntc(data, min, 2)
+		data = appendIntn(data, min, 2)
 		data = append(data, ':')
-		data = appendIntc(data, sec, 2)
+		data = appendIntn(data, sec, 2)
 		if flag&tf_MICROSECONDS != 0 {
 			data = append(data, '.')
-			data = appendIntc(data, t.Nanosecond()/1e3, 6)
+			data = appendIntn(data, t.Nanosecond()/1e3, 6)
 		}
 		data = append(data, ' ')
 	}
@@ -97,7 +97,7 @@ func appendMessage(data []byte, m string) []byte {
 	return data
 }
 
-func appendIntc(data []byte, x int, count int) []byte {
+func appendIntn(data []byte, x int, count int) []byte {
 	const base = 10
 	begin := len(data)
 	var digitIndex int
