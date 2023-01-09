@@ -5,22 +5,22 @@ import (
 	"os"
 )
 
-func MakeLogger(level Level, w io.Writer) Logger {
-	return NewHandleLogger(
-		level,
-		&StreamHandler{
-			Output: w,
-			Format: &FormatText{
-				HasLevel:        true,
-				HasDate:         true,
-				HasTime:         true,
-				HasMicroseconds: true,
-				ShieldSpecial:   true,
-			},
+func MakeLogger(w io.Writer) Logger {
+	f := FormatText{
+		HasLevel:        true,
+		HasDate:         true,
+		HasTime:         true,
+		HasMicroseconds: true,
+		ShieldSpecial:   true,
+	}.Formatter()
+	return NewLoggerRW(
+		&StreamRecordWriter{
+			Writer:    w,
+			Formatter: f,
 		},
 	)
 }
 
-func MakeStdoutLogger(level Level) Logger {
-	return MakeLogger(level, os.Stdout)
+func MakeLoggerStdout() Logger {
+	return MakeLogger(os.Stdout)
 }

@@ -18,6 +18,16 @@ const (
 	LevelTrace                 // log: [ Critical, Error, Warning, Info, Debug, Trace ]
 )
 
+var shortLevels = map[Level]string{
+	LevelOff:      "OFF",
+	LevelCritical: "CRI",
+	LevelError:    "ERR",
+	LevelWarning:  "WAR",
+	LevelInfo:     "INF",
+	LevelDebug:    "DEB",
+	LevelTrace:    "TRA",
+}
+
 var namesLevel = map[Level]string{
 	LevelOff:      "off",
 	LevelCritical: "critical",
@@ -38,11 +48,18 @@ var valuesLevel = map[string]Level{
 	"trace":    LevelTrace,
 }
 
+func (l Level) Short() string {
+	if shortName, ok := shortLevels[l]; ok {
+		return shortName
+	}
+	return "<?>"
+}
+
 func (l Level) String() string {
 	if name, ok := namesLevel[l]; ok {
 		return name
 	}
-	return fmt.Sprintf("Level(%d)", int(l))
+	return fmt.Sprintf("%s(%d)", "Level", int(l))
 }
 
 func ParseLevel(s string) (Level, error) {

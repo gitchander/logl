@@ -6,24 +6,24 @@ import (
 )
 
 const (
-	// timeFormat = "2006-01-02 15:04:05"
-	// timeFormat = time.RFC3339
-	timeFormat = time.RFC3339Nano
+	// timeFormatJSON = "2006-01-02 15:04:05"
+	// timeFormatJSON = time.RFC3339
+	timeFormatJSON = time.RFC3339Nano
 )
 
 type formatJSON struct {
-	b bytes.Buffer
+	br bytes.Buffer
 }
 
 func (f *formatJSON) Format(r *Record) []byte {
-	b := &(f.b)
+	b := &(f.br)
 	b.Reset()
 	b.WriteByte('{')
-	jsonEncodePair(b, "time", r.Time.Format(timeFormat))
+	f.encodePair("time", r.Time.Format(timeFormatJSON))
 	b.WriteByte(',')
-	jsonEncodePair(b, "level", r.Level.String())
+	f.encodePair("level", r.Level.String())
 	b.WriteByte(',')
-	jsonEncodePair(b, "message", r.Message)
+	f.encodePair("message", r.Message)
 	b.WriteByte('}')
 	b.WriteByte('\n')
 	return b.Bytes()
@@ -33,13 +33,14 @@ func FormatJSON() Formatter {
 	return new(formatJSON)
 }
 
-func jsonEncodePair(b *bytes.Buffer, name, value string) {
-	jsonEncodeString(b, name)
-	b.WriteByte(':')
-	jsonEncodeString(b, value)
+func (f *formatJSON) encodePair(name, value string) {
+	f.encodeString(name)
+	f.br.WriteByte(':')
+	f.encodeString(value)
 }
 
-func jsonEncodeString(b *bytes.Buffer, s string) {
+func (f *formatJSON) encodeString(s string) {
+	b := &(f.br)
 	b.WriteByte('"')
 	writeString(b, s)
 	b.WriteByte('"')

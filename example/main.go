@@ -7,7 +7,10 @@ import (
 	"os"
 	"sync"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/gitchander/logl"
+	"github.com/gitchander/logl/logut"
 )
 
 func main() {
@@ -15,7 +18,9 @@ func main() {
 	exampleLogOff()
 	exampleLogFile()
 	exampleThreads()
+	exampleUnrep()
 	examplePanic()
+	exampleUseLogrus()
 }
 
 func use(l logl.Logger) {
@@ -26,15 +31,14 @@ func use(l logl.Logger) {
 }
 
 func exampleLogStdout() {
-	l := logl.NewHandleLogger(
-		logl.LevelTrace,
-		&logl.StreamHandler{
-			Output: os.Stdout,
-			Format: &logl.FormatText{
+	l := logl.NewLoggerRW(
+		&logl.StreamRecordWriter{
+			Writer: os.Stdout,
+			Formatter: logl.FormatText{
 				HasLevel:      true,
 				HasTime:       true,
 				ShieldSpecial: true,
-			},
+			}.Formatter(),
 		},
 	)
 	use(l)
@@ -42,16 +46,16 @@ func exampleLogStdout() {
 }
 
 func exampleLogOff() {
-	l := logl.NewHandleLogger(
-		logl.LevelOff,
-		&logl.StreamHandler{
-			Output: os.Stdout,
-			Format: &logl.FormatText{
+	l := logl.NewLoggerRW(
+		&logl.StreamRecordWriter{
+			Writer: os.Stdout,
+			Formatter: logl.FormatText{
 				HasLevel: true,
 				HasTime:  true,
-			},
+			}.Formatter(),
 		},
 	)
+	l.SetLevel(logl.LevelOff)
 	use(l)
 }
 
@@ -66,41 +70,45 @@ func exampleLogFile() {
 	bw := bufio.NewWriter(file)
 	defer bw.Flush()
 
-	l := logl.NewHandleLogger(
-		logl.LevelWarning,
-		&logl.StreamHandler{
-			Output: bw,
-			Format: &logl.FormatText{
+	l := logl.NewLoggerRW(
+		&logl.StreamRecordWriter{
+			Writer: bw,
+			Formatter: logl.FormatText{
 				HasLevel:        true,
 				HasDate:         true,
 				HasMicroseconds: true,
 				ShieldSpecial:   true,
-			},
+			}.Formatter(),
 		},
 	)
+	l.SetLevel(logl.LevelWarning)
 
 	use(l)
 }
 
 func examplePanic() {
 
-	sh := &logl.StreamHandler{
-		Output: os.Stdout,
-		Format: &logl.FormatText{
+	sh := &logl.StreamRecordWriter{
+		Writer: os.Stdout,
+		Formatter: logl.FormatText{
 			HasLevel: true,
 			HasTime:  true,
-		},
+		}.Formatter(),
 	}
 
-	l := logl.NewHandleLogger(
-		logl.LevelInfo,
-		logl.FuncHandler(func(r *logl.Record) {
-			sh.Handle(r)
+	l := logl.NewLoggerRW(
+		logl.FuncRecordWriter(func(r *logl.Record) error {
+			err := sh.WriteRecord(r)
+			if err != nil {
+				return err
+			}
 			if r.Level == logl.LevelCritical {
 				panic(r.Message)
 			}
+			return nil
 		}),
 	)
+	l.SetLevel(logl.LevelInfo)
 
 	panicMessageRecover(l)
 
@@ -129,28 +137,29 @@ func exampleThreads() {
 	bw := bufio.NewWriter(file)
 	defer bw.Flush()
 
-	l := logl.NewHandleLogger(
-		logl.LevelWarning,
-		logl.MultiHandler(
-			logl.DummyHandler,
-			&logl.StreamHandler{
-				Output: bw,
-				Format: logl.FormatJSON(),
+	l := logl.NewLoggerRW(
+		logl.MultiRecordWriter(
+			logl.DummyRecordWriter(),
+			&logl.StreamRecordWriter{
+				Writer:    bw,
+				Formatter: logl.FormatJSON(),
 			},
-			&logl.StreamHandler{
-				Output: os.Stdout,
+			&logl.StreamRecordWriter{
+				Writer: os.Stdout,
 				//Formatter: logl.FormatJSON(),
 				//Formatter: new(customTextFormat),
-				Format: &logl.FormatText{
+				Formatter: logl.FormatText{
 					HasLevel:        true,
 					HasDate:         true,
 					HasTime:         true,
 					HasMicroseconds: true,
 					ShieldSpecial:   true,
-				},
+				}.Formatter(),
 			},
 		),
 	)
+	l.SetLevel(logl.LevelWarning)
+
 	var wg sync.WaitGroup
 	const n = 100
 	wg.Add(n)
@@ -179,4 +188,31 @@ func (p *customTextFormat) Format(r *logl.Record) []byte {
 	p.buf.Reset()
 	fmt.Fprintf(&(p.buf), "%s [%-8s] %s\n", r.Time.Format("2006/01/02 15:04:05"), r.Level, r.Message)
 	return p.buf.Bytes()
+}
+
+func exampleUnrep() {
+
+	urw := logut.NewUnrepRecordWriter(
+		&logl.StreamRecordWriter{
+			Writer: os.Stdout,
+			Formatter: logl.FormatText{
+				HasLevel:      true,
+				HasTime:       true,
+				ShieldSpecial: true,
+			}.Formatter(),
+		})
+	defer urw.Flush()
+
+	l := logl.NewLoggerRW(urw)
+	l.SetLevel(logl.LevelInfo)
+
+	for i := 0; i < 10000; i++ {
+		l.Info("Hello, World!")
+	}
+}
+
+func exampleUseLogrus() {
+	l := logut.LoggerByLogrus(logrus.New())
+	l.Info("Hello, Logrus!")
+	use(l)
 }

@@ -22,7 +22,7 @@ func newRandNow() *rand.Rand {
 
 func randLine(r *rand.Rand, n_word int) string {
 	delims := []byte{
-		'\n', '\r', '\t', '\\', '"', '\'', ',', '.', ';', ':', '!', '?',
+		'\n', '\r', '\t', '\f', '\\', '"', '\'', ',', '.', ';', ':', '!', '?',
 	}
 	var buf bytes.Buffer
 	for i := 0; i < n_word; i++ {

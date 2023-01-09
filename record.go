@@ -1,8 +1,6 @@
 package logl
 
-import (
-	"time"
-)
+import "time"
 
 type Record struct {
 	Time    time.Time
