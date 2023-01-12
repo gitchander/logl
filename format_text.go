@@ -20,10 +20,10 @@ type FormatText struct {
 }
 
 func (f FormatText) Formatter() Formatter {
-	return newTextFormatter(f)
+	return newFormatterText(f)
 }
 
-type textFormatter struct {
+type formatterText struct {
 	hasLevel        bool
 	hasDate         bool
 	hasTime         bool
@@ -34,8 +34,8 @@ type textFormatter struct {
 	numberBytes []byte
 }
 
-func newTextFormatter(f FormatText) *textFormatter {
-	return &textFormatter{
+func newFormatterText(f FormatText) *formatterText {
+	return &formatterText{
 		hasLevel:        f.HasLevel,
 		hasDate:         f.HasDate,
 		hasTime:         f.HasTime,
@@ -46,7 +46,7 @@ func newTextFormatter(f FormatText) *textFormatter {
 	}
 }
 
-func (f *textFormatter) Format(r *Record) []byte {
+func (f *formatterText) Format(r *Record) []byte {
 
 	b := &(f.br)
 
@@ -55,12 +55,12 @@ func (f *textFormatter) Format(r *Record) []byte {
 	return b.Bytes()
 }
 
-func (f *textFormatter) writeTextFormat(r *Record) {
+func (f *formatterText) writeTextFormat(r *Record) {
 
 	b := &(f.br)
 
 	if f.hasLevel {
-		b.WriteString(r.Level.Short())
+		b.WriteString(r.Level.shortName())
 		b.WriteByte(' ')
 	}
 
@@ -78,7 +78,7 @@ func (f *textFormatter) writeTextFormat(r *Record) {
 	}
 }
 
-func (f *textFormatter) writeTime(t time.Time) {
+func (f *formatterText) writeTime(t time.Time) {
 
 	b := &(f.br)
 
@@ -107,12 +107,12 @@ func (f *textFormatter) writeTime(t time.Time) {
 	}
 }
 
-func (f *textFormatter) formatIntnBytes(x, n int) []byte {
+func (f *formatterText) formatIntnBytes(x, n int) []byte {
 	const base = 10
 	return f.formatIntnBytesBase(x, n, base)
 }
 
-func (f *textFormatter) formatIntnBytesBase(x, n, base int) []byte {
+func (f *formatterText) formatIntnBytesBase(x, n, base int) []byte {
 	data := f.numberBytes
 	formatIntn(x, n, base, data)
 	return data[(len(data) - n):]

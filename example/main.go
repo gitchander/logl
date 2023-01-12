@@ -30,9 +30,13 @@ func use(l logl.Logger) {
 	}
 }
 
+func openLogFile(filename string) (*os.File, error) {
+	return os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+}
+
 func exampleLogStdout() {
 	l := logl.NewLoggerRW(
-		&logl.StreamRecordWriter{
+		&logl.FormatWriter{
 			Writer: os.Stdout,
 			Formatter: logl.FormatText{
 				HasLevel:      true,
@@ -47,7 +51,7 @@ func exampleLogStdout() {
 
 func exampleLogOff() {
 	l := logl.NewLoggerRW(
-		&logl.StreamRecordWriter{
+		&logl.FormatWriter{
 			Writer: os.Stdout,
 			Formatter: logl.FormatText{
 				HasLevel: true,
@@ -61,7 +65,7 @@ func exampleLogOff() {
 
 func exampleLogFile() {
 
-	file, err := os.OpenFile("test1.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	file, err := openLogFile("test1.log")
 	if err != nil {
 		return
 	}
@@ -71,7 +75,7 @@ func exampleLogFile() {
 	defer bw.Flush()
 
 	l := logl.NewLoggerRW(
-		&logl.StreamRecordWriter{
+		&logl.FormatWriter{
 			Writer: bw,
 			Formatter: logl.FormatText{
 				HasLevel:        true,
@@ -88,7 +92,7 @@ func exampleLogFile() {
 
 func examplePanic() {
 
-	sh := &logl.StreamRecordWriter{
+	sh := &logl.FormatWriter{
 		Writer: os.Stdout,
 		Formatter: logl.FormatText{
 			HasLevel: true,
@@ -128,7 +132,8 @@ func panicMessageRecover(l logl.Logger) {
 }
 
 func exampleThreads() {
-	file, err := os.OpenFile("test2.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+
+	file, err := openLogFile("test2.log")
 	if err != nil {
 		return
 	}
@@ -140,11 +145,11 @@ func exampleThreads() {
 	l := logl.NewLoggerRW(
 		logl.MultiRecordWriter(
 			logl.DummyRecordWriter(),
-			&logl.StreamRecordWriter{
+			&logl.FormatWriter{
 				Writer:    bw,
 				Formatter: logl.FormatJSON(),
 			},
-			&logl.StreamRecordWriter{
+			&logl.FormatWriter{
 				Writer: os.Stdout,
 				//Formatter: logl.FormatJSON(),
 				//Formatter: new(customTextFormat),
@@ -158,15 +163,17 @@ func exampleThreads() {
 			},
 		),
 	)
-	l.SetLevel(logl.LevelWarning)
+	l.SetLevel(logl.LevelTrace)
 
 	var wg sync.WaitGroup
-	const n = 100
+	const n = 10
 	wg.Add(n)
+	rr := newRandNow()
 	for i := 0; i < n; i++ {
-		go func(id int) {
-			r := newRandSeed(int64(id))
-			for j := 0; j < 100; j++ {
+		newSeed := rr.Int63()
+		go func(id int, seed int64) {
+			r := newRandSeed(seed)
+			for j := 0; j < 20; j++ {
 				var (
 					level = randLogLevel(r)
 					// message = fmt.Sprintf("id(%d):%s", id, randLine(r, randIntRange(r, 3, 8)))
@@ -175,7 +182,7 @@ func exampleThreads() {
 				l.Log(level, message)
 			}
 			wg.Done()
-		}(i)
+		}(i, newSeed)
 	}
 	wg.Wait()
 }
@@ -193,7 +200,7 @@ func (p *customTextFormat) Format(r *logl.Record) []byte {
 func exampleUnrep() {
 
 	urw := logut.NewUnrepRecordWriter(
-		&logl.StreamRecordWriter{
+		&logl.FormatWriter{
 			Writer: os.Stdout,
 			Formatter: logl.FormatText{
 				HasLevel:      true,
@@ -215,4 +222,27 @@ func exampleUseLogrus() {
 	l := logut.LoggerByLogrus(logrus.New())
 	l.Info("Hello, Logrus!")
 	use(l)
+}
+
+func exampleLogRotate() {
+
+	lc := logut.DefaultLogConfig
+
+	lw := logut.NewLogWriter(lc.WriterConfig)
+	defer lw.Close()
+
+	logger := logl.MakeLogger(lw)
+	logger.SetLevel(lc.LogLevel)
+
+	for i := 0; i < 10; i++ {
+		logger.Debugf("Message #%d", i+1)
+	}
+
+	logger.Info("Before rotate")
+	lw.Rotate()
+	logger.Info("After rotate")
+
+	for i := 0; i < 10; i++ {
+		logger.Debugf("Message #%d", i+1)
+	}
 }

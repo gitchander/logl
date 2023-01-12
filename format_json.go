@@ -11,11 +11,11 @@ const (
 	timeFormatJSON = time.RFC3339Nano
 )
 
-type formatJSON struct {
+type formatterJSON struct {
 	br bytes.Buffer
 }
 
-func (f *formatJSON) Format(r *Record) []byte {
+func (f *formatterJSON) Format(r *Record) []byte {
 	b := &(f.br)
 	b.Reset()
 	b.WriteByte('{')
@@ -30,16 +30,16 @@ func (f *formatJSON) Format(r *Record) []byte {
 }
 
 func FormatJSON() Formatter {
-	return new(formatJSON)
+	return new(formatterJSON)
 }
 
-func (f *formatJSON) encodePair(name, value string) {
+func (f *formatterJSON) encodePair(name, value string) {
 	f.encodeString(name)
 	f.br.WriteByte(':')
 	f.encodeString(value)
 }
 
-func (f *formatJSON) encodeString(s string) {
+func (f *formatterJSON) encodeString(s string) {
 	b := &(f.br)
 	b.WriteByte('"')
 	writeString(b, s)

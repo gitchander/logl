@@ -14,7 +14,7 @@ func MakeLogger(w io.Writer) Logger {
 		ShieldSpecial:   true,
 	}.Formatter()
 	return NewLoggerRW(
-		&StreamRecordWriter{
+		&FormatWriter{
 			Writer:    w,
 			Formatter: f,
 		},

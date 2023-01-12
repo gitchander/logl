@@ -48,7 +48,7 @@ var valuesLevel = map[string]Level{
 	"trace":    LevelTrace,
 }
 
-func (l Level) Short() string {
+func (l Level) shortName() string {
 	if shortName, ok := shortLevels[l]; ok {
 		return shortName
 	}

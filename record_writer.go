@@ -52,21 +52,21 @@ func FilterRecordWriter(filter func(*Record) bool, rw RecordWriter) RecordWriter
 	)
 }
 
-type StreamRecordWriter struct {
+type FormatWriter struct {
 	Writer    io.Writer
 	Formatter Formatter
 }
 
-func (p *StreamRecordWriter) WriteRecord(r *Record) error {
+func (p *FormatWriter) WriteRecord(r *Record) error {
 	data := p.Formatter.Format(r)
 	_, err := p.Writer.Write(data)
 	return err
 }
 
-func NewStreamRW(w io.Writer, formatter Formatter) RecordWriter {
+func NewStreamRW(w io.Writer, f Formatter) RecordWriter {
 	return FuncRecordWriter(
 		func(r *Record) error {
-			data := formatter.Format(r)
+			data := f.Format(r)
 			_, err := w.Write(data)
 			return err
 		},
